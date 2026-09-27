@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="RunConfig" format=3]
+
+[ext_resource type="Script" path="res://src/defs/run_config.gd" id="cfg"]
+[ext_resource type="Resource" path="res://data/maps/outpost.tres" id="map"]
+[ext_resource type="Resource" path="res://data/maps/canyon.tres" id="map_canyon"]
+[ext_resource type="Script" path="res://src/defs/map_def.gd" id="t_maps"]
+[ext_resource type="Resource" path="res://data/barricade.tres" id="barricade"]
+[ext_resource type="Script" path="res://src/defs/unit_def.gd" id="t_units"]
+[ext_resource type="Resource" path="res://data/units/mg.tres" id="units_0"]
+[ext_resource type="Resource" path="res://data/units/rifleman.tres" id="units_1"]
+[ext_resource type="Resource" path="res://data/units/frost.tres" id="units_2"]
+[ext_resource type="Resource" path="res://data/units/mortar.tres" id="units_3"]
+[ext_resource type="Resource" path="res://data/units/sniper.tres" id="units_4"]
+[ext_resource type="Resource" path="res://data/units/rail.tres" id="units_5"]
+[ext_resource type="Script" path="res://src/defs/card_def.gd" id="t_cards"]
+[ext_resource type="Resource" path="res://data/cards/bounty.tres" id="cards_0"]
+[ext_resource type="Resource" path="res://data/cards/crits.tres" id="cards_1"]
+[ext_resource type="Resource" path="res://data/cards/masonry.tres" id="cards_2"]
+[ext_resource type="Resource" path="res://data/cards/mortar_regen.tres" id="cards_4"]
+[ext_resource type="Resource" path="res://data/cards/overclock.tres" id="cards_5"]
+[ext_resource type="Resource" path="res://data/cards/permafrost.tres" id="cards_6"]
+[ext_resource type="Resource" path="res://data/cards/rangefinder.tres" id="cards_7"]
+[ext_resource type="Resource" path="res://data/cards/runner_bounty.tres" id="cards_8"]
+[ext_resource type="Resource" path="res://data/cards/sharpened.tres" id="cards_9"]
+[ext_resource type="Resource" path="res://data/cards/scavengers.tres" id="cards_10"]
+[ext_resource type="Resource" path="res://data/cards/crowbars.tres" id="cards_11"]
+[ext_resource type="Script" path="res://src/defs/meta_upgrade_def.gd" id="t_meta_upgrades"]
+[ext_resource type="Resource" path="res://data/meta/engineers.tres" id="meta_upgrades_0"]
+[ext_resource type="Resource" path="res://data/meta/salvage.tres" id="meta_upgrades_1"]
+[ext_resource type="Resource" path="res://data/meta/drill.tres" id="meta_upgrades_2"]
+[ext_resource type="Resource" path="res://data/meta/thick_walls.tres" id="meta_upgrades_3"]
+[ext_resource type="Resource" path="res://data/meta/treasury.tres" id="meta_upgrades_4"]
+[ext_resource type="Resource" path="res://data/meta/war_chest.tres" id="meta_upgrades_5"]
+
+[resource]
+script = ExtResource("cfg")
+map = ExtResource("map")
+maps = Array[ExtResource("t_maps")]([ExtResource("map"), ExtResource("map_canyon")])
+barricade = ExtResource("barricade")
+units = Array[ExtResource("t_units")]([ExtResource("units_0"), ExtResource("units_1"), ExtResource("units_2"), ExtResource("units_3"), ExtResource("units_4"), ExtResource("units_5")])
+cards = Array[ExtResource("t_cards")]([ExtResource("cards_0"), ExtResource("cards_1"), ExtResource("cards_2"), ExtResource("cards_4"), ExtResource("cards_5"), ExtResource("cards_6"), ExtResource("cards_7"), ExtResource("cards_8"), ExtResource("cards_9"), ExtResource("cards_10"), ExtResource("cards_11")])
+meta_upgrades = Array[ExtResource("t_meta_upgrades")]([ExtResource("meta_upgrades_0"), ExtResource("meta_upgrades_1"), ExtResource("meta_upgrades_2"), ExtResource("meta_upgrades_3"), ExtResource("meta_upgrades_4"), ExtResource("meta_upgrades_5")])

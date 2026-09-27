@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="MasteryDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/mastery_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"bolt_action"
+title = "Bolt Action"
+description = "Reloads 25% faster."
+reload_bonus = 0.33

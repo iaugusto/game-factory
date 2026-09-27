@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="UnitDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/unit_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/mastery_def.gd" id="t_m"]
+[ext_resource type="Resource" path="res://data/masteries/overcharge.tres" id="m_0"]
+[ext_resource type="Resource" path="res://data/masteries/heavy_shells.tres" id="m_1"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"mortar"
+display_name = "Mortar"
+description = "Lobs a shell where the target was. Great on packs, slow movers."
+role = 1
+attack = 1
+hp = 140.0
+cost = 45
+upgrade_costs = PackedInt32Array(45, 70)
+damage = 8.0
+reload = 2.4
+reach = 290.0
+projectile_speed = 330.0
+splash_radius = 55.0
+color = Color(0.8784, 0.6275, 0.3137, 1)
+level_damage_bonus = 0.35
+level_reload_bonus = 0.1
+damage_type = 1
+masteries = Array[ExtResource("t_m")]([ExtResource("m_0"), ExtResource("m_1")])
+mastery_cost = 90

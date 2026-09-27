@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"brute"
+description = "Armoured and slow: small rounds bounce off and blasts glance. Snipers and rails punch through its vent."
+display_name = "Carapace"
+hp = 55.0
+speed = 20.0
+wall_damage = 15.0
+gold = 4
+radius = 20.0
+color = Color(0.5412, 0.3608, 0.8392, 1)
+weak_to = 4
+resists = 2
+armor = 3.0
+threat = 20.0

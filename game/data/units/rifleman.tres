@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="UnitDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/unit_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/mastery_def.gd" id="t_m"]
+[ext_resource type="Resource" path="res://data/masteries/overcharge.tres" id="m_0"]
+[ext_resource type="Resource" path="res://data/masteries/marksman.tres" id="m_1"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"rifleman"
+display_name = "Rifleman"
+description = "Cheap, steady, reliable."
+role = 0
+attack = 0
+hp = 80.0
+cost = 20
+upgrade_costs = PackedInt32Array(25, 40)
+damage = 1.5
+reload = 0.5
+reach = 190.0
+projectile_speed = 950.0
+color = Color(0.6235, 0.8392, 0.4784, 1)
+level_damage_bonus = 0.35
+level_reload_bonus = 0.1
+damage_type = 0
+masteries = Array[ExtResource("t_m")]([ExtResource("m_0"), ExtResource("m_1")])
+mastery_cost = 50

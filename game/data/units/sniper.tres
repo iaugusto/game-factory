@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="UnitDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/unit_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/mastery_def.gd" id="t_m"]
+[ext_resource type="Resource" path="res://data/masteries/overcharge.tres" id="m_0"]
+[ext_resource type="Resource" path="res://data/masteries/bolt_action.tres" id="m_1"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"sniper"
+display_name = "Sniper"
+description = "Huge single shot, long reach, long reload."
+role = 0
+attack = 2
+hp = 90.0
+cost = 50
+upgrade_costs = PackedInt32Array(50, 80)
+damage = 18.0
+reload = 3.0
+reach = 430.0
+color = Color(0.8392, 0.8392, 0.9098, 1)
+level_damage_bonus = 0.35
+level_reload_bonus = 0.1
+damage_type = 2
+masteries = Array[ExtResource("t_m")]([ExtResource("m_0"), ExtResource("m_1")])
+mastery_cost = 100

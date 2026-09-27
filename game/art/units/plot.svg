@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="112" height="112" viewBox="0 0 56 56">
+<defs><radialGradient id="rg1" gradientUnits="objectBoundingBox" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000000" stop-opacity="0.4"/><stop offset="0.55" stop-color="#000000" stop-opacity="0.24"/><stop offset="1" stop-color="#000000" stop-opacity="0"/></radialGradient><linearGradient id="lg2" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0.7" y2="1"><stop offset="0" stop-color="#5d5a55" stop-opacity="1"/><stop offset="1" stop-color="#35332f" stop-opacity="1"/></linearGradient><radialGradient id="rg3" gradientUnits="objectBoundingBox" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#3de0c8" stop-opacity="0.25"/><stop offset="0.35" stop-color="#3de0c8" stop-opacity="0.12"/><stop offset="1" stop-color="#3de0c8" stop-opacity="0"/></radialGradient></defs>
+<ellipse cx="29" cy="30" rx="25" ry="23" fill="url(#rg1)"/>
+<path d="M47.918584287042094,39.5 L28.0,51.0 L8.08141571295791,39.5 L8.081415712957913,16.5 L27.999999999999996,5.0 L47.91858428704208,16.49999999999999 Z" fill="#0c1116" stroke="#0c1116" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M47.918584287042094,39.5 L28.0,51.0 L8.08141571295791,39.5 L8.081415712957913,16.5 L27.999999999999996,5.0 L47.91858428704208,16.49999999999999 Z" fill="url(#lg2)"/>
+<line x1="46.19" y1="38.5" x2="28" y2="49" stroke="#77736b" stroke-width="0.7" opacity="0.6"/>
+<line x1="28" y1="49" x2="9.81" y2="38.5" stroke="#77736b" stroke-width="0.7" opacity="0.6"/>
+<line x1="9.81" y1="38.5" x2="9.81" y2="17.5" stroke="#77736b" stroke-width="0.7" opacity="0.6"/>
+<line x1="9.81" y1="17.5" x2="28" y2="7" stroke="#77736b" stroke-width="0.7" opacity="0.6"/>
+<line x1="28" y1="7" x2="46.19" y2="17.5" stroke="#77736b" stroke-width="0.7" opacity="0.6"/>
+<line x1="46.19" y1="17.5" x2="46.19" y2="38.5" stroke="#77736b" stroke-width="0.7" opacity="0.6"/>
+<circle cx="28" cy="28" r="20" fill="url(#rg3)"/>
+<circle cx="28" cy="28" r="15" fill="none" stroke="#3de0c8" stroke-width="1.6" stroke-dasharray="4.2 2.6" opacity="0.9"/>
+<path d="M23.0,28.0 L33.0,28.0 M28.0,23.0 L28.0,33.0" stroke="#3de0c8" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

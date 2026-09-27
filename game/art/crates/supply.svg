@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 40 40">
+<defs><radialGradient id="rg1" gradientUnits="objectBoundingBox" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000000" stop-opacity="0.55"/><stop offset="0.55" stop-color="#000000" stop-opacity="0.33"/><stop offset="1" stop-color="#000000" stop-opacity="0"/></radialGradient><linearGradient id="lg2" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9955a" stop-opacity="1"/><stop offset="1" stop-color="#9a6a3a" stop-opacity="1"/></linearGradient><linearGradient id="lg3" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9955a" stop-opacity="1"/><stop offset="1" stop-color="#9a6a3a" stop-opacity="1"/></linearGradient><linearGradient id="lg4" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9955a" stop-opacity="1"/><stop offset="1" stop-color="#9a6a3a" stop-opacity="1"/></linearGradient><linearGradient id="lg5" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9955a" stop-opacity="1"/><stop offset="1" stop-color="#9a6a3a" stop-opacity="1"/></linearGradient><linearGradient id="lg6" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9955a" stop-opacity="1"/><stop offset="1" stop-color="#9a6a3a" stop-opacity="1"/></linearGradient><linearGradient id="lg7" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8d9aa6" stop-opacity="1"/><stop offset="1" stop-color="#2c343c" stop-opacity="1"/></linearGradient><linearGradient id="lg8" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8d9aa6" stop-opacity="1"/><stop offset="1" stop-color="#2c343c" stop-opacity="1"/></linearGradient><linearGradient id="lg9" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8d9aa6" stop-opacity="1"/><stop offset="1" stop-color="#2c343c" stop-opacity="1"/></linearGradient><linearGradient id="lg10" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8d9aa6" stop-opacity="1"/><stop offset="1" stop-color="#2c343c" stop-opacity="1"/></linearGradient></defs>
+<ellipse cx="22" cy="24" rx="19" ry="17" fill="url(#rg1)"/>
+<rect x="5" y="5" width="30" height="30" rx="2" fill="#5a3a1e" stroke="#120c10" stroke-width="1.6"/>
+<rect x="6" y="6" width="7" height="28" fill="url(#lg2)" stroke="#5a3a1e" stroke-width="0.8"/>
+<line x1="9.5" y1="9" x2="9.5" y2="31" stroke="#5a3a1e" stroke-width="0.35" opacity="0.6"/>
+<rect x="13" y="6" width="7" height="28" fill="url(#lg3)" stroke="#5a3a1e" stroke-width="0.8"/>
+<line x1="16.5" y1="9" x2="16.5" y2="31" stroke="#5a3a1e" stroke-width="0.35" opacity="0.6"/>
+<rect x="20" y="6" width="7" height="28" fill="url(#lg4)" stroke="#5a3a1e" stroke-width="0.8"/>
+<line x1="23.5" y1="9" x2="23.5" y2="31" stroke="#5a3a1e" stroke-width="0.35" opacity="0.6"/>
+<rect x="27" y="6" width="7" height="28" fill="url(#lg5)" stroke="#5a3a1e" stroke-width="0.8"/>
+<line x1="30.5" y1="9" x2="30.5" y2="31" stroke="#5a3a1e" stroke-width="0.35" opacity="0.6"/>
+<path d="M8,31 L32,9 L32,12.5 L11.5,31 Z" fill="url(#lg6)" stroke="#5a3a1e" stroke-width="0.8"/>
+<rect x="5" y="5" width="30" height="30" rx="2" fill="none" stroke="#5a3a1e" stroke-width="2.2"/>
+<rect x="5" y="5" width="6" height="6" rx="1" fill="url(#lg7)" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="8" cy="8" r="0.9" fill="#2c343c"/>
+<rect x="29" y="5" width="6" height="6" rx="1" fill="url(#lg8)" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="32" cy="8" r="0.9" fill="#2c343c"/>
+<rect x="5" y="29" width="6" height="6" rx="1" fill="url(#lg9)" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="8" cy="32" r="0.9" fill="#2c343c"/>
+<rect x="29" y="29" width="6" height="6" rx="1" fill="url(#lg10)" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="32" cy="32" r="0.9" fill="#2c343c"/>
+<path d="M14,22 L20,16 L26,22" fill="none" stroke="#f4ead0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+<path d="M14,26 L20,20 L26,26" fill="none" stroke="#f4ead0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+<rect x="6" y="6" width="28" height="5" fill="#ffffff" opacity="0.12"/>
+</svg>

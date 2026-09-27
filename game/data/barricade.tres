@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="BarricadeDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/barricade_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+hp_per_level = PackedFloat32Array(60, 140, 260)
+costs = PackedInt32Array(30, 40, 60)
+repair_cost_per_hp = 0.25

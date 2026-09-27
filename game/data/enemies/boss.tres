@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"boss"
+description = "The Hive Queen. One strike breaks any gate. Only piercing rounds get through her hide."
+display_name = "Hive Queen"
+hp = 250.0
+speed = 11.0
+wall_damage = 999.0
+gold = 40
+radius = 40.0
+color = Color(0.8392, 0.2353, 0.4157, 1)
+weak_to = 4
+resists = 8
+armor = 4.0
+threat = 150.0

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CrateDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/crate_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"supply"
+display_name = "Supply Crate"
+hp = 5.0
+reward = 12
+speed = 34.0
+radius = 18.0
+color = Color(0.8510, 0.6431, 0.2549, 1)

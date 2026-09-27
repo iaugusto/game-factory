@@ -1,0 +1,139 @@
+[gd_resource type="Resource" script_class="WaveDef" format=3]
+
+[ext_resource type="Resource" path="res://data/enemies/ravager.tres" id="e_ravager"]
+[ext_resource type="Resource" path="res://data/enemies/splitter.tres" id="e_splitter"]
+[ext_resource type="Resource" path="res://data/enemies/mender.tres" id="e_mender"]
+[ext_resource type="Resource" path="res://data/elites/swift.tres" id="el_swift"]
+[ext_resource type="Resource" path="res://data/elites/regenerating.tres" id="el_regenerating"]
+[ext_resource type="Script" path="res://src/defs/wave_def.gd" id="w"]
+[ext_resource type="Script" path="res://src/defs/spawn_entry.gd" id="se"]
+[ext_resource type="Script" path="res://src/defs/crate_spawn.gd" id="cs"]
+[ext_resource type="Resource" path="res://data/enemies/boss.tres" id="e_boss"]
+[ext_resource type="Resource" path="res://data/enemies/brute.tres" id="e_brute"]
+[ext_resource type="Resource" path="res://data/enemies/grunt.tres" id="e_grunt"]
+[ext_resource type="Resource" path="res://data/enemies/runner.tres" id="e_runner"]
+[ext_resource type="Resource" path="res://data/enemies/spitter.tres" id="e_spitter"]
+[ext_resource type="Resource" path="res://data/crates/cache.tres" id="c_cache"]
+[ext_resource type="Resource" path="res://data/crates/overdrive.tres" id="c_overdrive"]
+[ext_resource type="Resource" path="res://data/crates/supply.tres" id="c_supply"]
+
+[sub_resource type="Resource" id="s0"]
+script = ExtResource("se")
+enemy = ExtResource("e_brute")
+count = 2
+start = 8.0
+interval = 1.0
+path = 0
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("se")
+enemy = ExtResource("e_boss")
+count = 1
+start = 10.0
+interval = 1.0
+path = 0
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("se")
+enemy = ExtResource("e_grunt")
+count = 28
+start = 0.5
+interval = 0.8
+path = -1
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("se")
+enemy = ExtResource("e_runner")
+count = 18
+start = 4.0
+interval = 1.0
+path = -1
+
+[sub_resource type="Resource" id="s4"]
+script = ExtResource("se")
+enemy = ExtResource("e_brute")
+count = 4
+start = 14.0
+interval = 5.0
+path = -1
+
+[sub_resource type="Resource" id="s5"]
+script = ExtResource("se")
+enemy = ExtResource("e_spitter")
+count = 5
+start = 6.0
+interval = 4.0
+path = -1
+
+[sub_resource type="Resource" id="c0"]
+script = ExtResource("cs")
+crate = ExtResource("c_overdrive")
+time = 4.0
+path = -1
+
+[sub_resource type="Resource" id="c1"]
+script = ExtResource("cs")
+crate = ExtResource("c_cache")
+time = 12.0
+path = -1
+
+[sub_resource type="Resource" id="c2"]
+script = ExtResource("cs")
+crate = ExtResource("c_supply")
+time = 20.0
+path = -1
+
+[sub_resource type="Resource" id="c3"]
+script = ExtResource("cs")
+crate = ExtResource("c_cache")
+time = 30.0
+path = -1
+
+[sub_resource type="Resource" id="x0"]
+script = ExtResource("se")
+enemy = ExtResource("e_ravager")
+count = 3
+start = 5.0
+interval = 4.0
+path = -1
+
+[sub_resource type="Resource" id="x1"]
+script = ExtResource("se")
+enemy = ExtResource("e_splitter")
+count = 3
+start = 12.0
+interval = 4.0
+path = -1
+
+[sub_resource type="Resource" id="x2"]
+script = ExtResource("se")
+enemy = ExtResource("e_mender")
+count = 2
+start = 11.0
+interval = 1.0
+path = 0
+
+[sub_resource type="Resource" id="x3"]
+script = ExtResource("se")
+enemy = ExtResource("e_runner")
+count = 12
+start = 15.0
+interval = 0.4
+path = -1
+elite = ExtResource("el_swift")
+
+[sub_resource type="Resource" id="x4"]
+script = ExtResource("se")
+enemy = ExtResource("e_brute")
+count = 2
+start = 18.0
+interval = 4.0
+path = -1
+elite = ExtResource("el_regenerating")
+
+[resource]
+script = ExtResource("w")
+spawns = Array[ExtResource("se")]([SubResource("s0"), SubResource("s1"), SubResource("s2"), SubResource("s3"), SubResource("s4"), SubResource("s5"), SubResource("x0"), SubResource("x1"), SubResource("x2"), SubResource("x3"), SubResource("x4")])
+crates = Array[ExtResource("cs")]([SubResource("c0"), SubResource("c1"), SubResource("c2"), SubResource("c3")])
+hp_scale = 11.25
+speed_scale = 1.27

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+[ext_resource type="Resource" path="res://data/enemies/runner.tres" id="2_r"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"splitter"
+display_name = "Splitter"
+description = "A bloated brood sac: kill it and three Skitters burst out where it fell. Kill it early, and with splash; bullets just pop it."
+hp = 22.0
+speed = 32.0
+wall_damage = 6.0
+gold = 3
+radius = 16.0
+color = Color(0.8627, 0.7843, 0.2745, 1)
+weak_to = 2
+resists = 1
+armor = 0.0
+threat = 3.0
+split_into = ExtResource("2_r")
+split_count = 3

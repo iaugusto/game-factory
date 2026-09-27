@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="UnitDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/unit_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/mastery_def.gd" id="t_m"]
+[ext_resource type="Resource" path="res://data/masteries/overcharge.tres" id="m_0"]
+[ext_resource type="Resource" path="res://data/masteries/deep_freeze.tres" id="m_1"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"frost"
+display_name = "Cryo Projector"
+description = "Chills a target to half speed."
+role = 1
+attack = 0
+hp = 100.0
+cost = 30
+upgrade_costs = PackedInt32Array(30, 45)
+damage = 2.5
+reload = 1.0
+reach = 175.0
+projectile_speed = 700.0
+slow_factor = 0.5
+slow_duration = 2.0
+color = Color(0.5608, 0.9098, 1.0000, 1)
+level_damage_bonus = 0.35
+level_reload_bonus = 0.1
+damage_type = 3
+masteries = Array[ExtResource("t_m")]([ExtResource("m_0"), ExtResource("m_1")])
+mastery_cost = 60

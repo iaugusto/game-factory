@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"spitter"
+description = "Spits acid that jams a unit for 4 s. Freeze its gland with Cryo; bullets barely scratch it."
+display_name = "Spitter"
+hp = 14.0
+speed = 30.0
+wall_damage = 4.0
+gold = 2
+radius = 13.0
+color = Color(0.1843, 0.6824, 0.5569, 1)
+spit_interval = 3.5
+spit_range = 140.0
+spit_speed = 260.0
+disable_duration = 4.0
+weak_to = 8
+resists = 1
+armor = 0.0
+threat = 2.5

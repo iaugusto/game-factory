@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/card_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"crowbars"
+title = "Crowbars"
+description = "Your taps deal +50% damage to crates."
+key = &"crate_damage_bonus"
+value = 0.5
+weight = 0.8
+max_stacks = 2

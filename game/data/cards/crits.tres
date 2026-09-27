@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CardDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/card_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"crits"
+title = "Marksmen"
+description = "Unit shots get a 10% chance to deal double damage."
+key = &"crit_chance"
+value = 0.1
+max_stacks = 3

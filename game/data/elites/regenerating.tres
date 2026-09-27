@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EliteDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/elite_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"regenerating"
+title = "Regenerating"
+description = "Heals 4% of its HP a second: burst it down."
+regen = 0.04
+tint = Color(0.55, 1, 0.6, 1)

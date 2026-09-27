@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="UnitDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/unit_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/mastery_def.gd" id="t_m"]
+[ext_resource type="Resource" path="res://data/masteries/overcharge.tres" id="m_0"]
+[ext_resource type="Resource" path="res://data/masteries/ap_rounds.tres" id="m_1"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"mg"
+display_name = "MG Nest"
+description = "Hoses the nearest threat. Tiny rounds, no pause."
+role = 1
+attack = 0
+hp = 120.0
+cost = 35
+upgrade_costs = PackedInt32Array(35, 55)
+damage = 1.0
+reload = 0.16
+reach = 160.0
+projectile_speed = 1100.0
+color = Color(0.4980, 0.7020, 0.8353, 1)
+level_damage_bonus = 0.35
+level_reload_bonus = 0.1
+damage_type = 0
+masteries = Array[ExtResource("t_m")]([ExtResource("m_0"), ExtResource("m_1")])
+mastery_cost = 70

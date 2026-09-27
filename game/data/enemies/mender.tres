@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"mender"
+display_name = "Mender"
+description = "Heals every enemy around it. Pick it off first with a Sniper or Rail; blasts wash over it."
+hp = 18.0
+speed = 34.0
+wall_damage = 3.0
+gold = 3
+radius = 12.0
+color = Color(0.3529, 0.8627, 0.5098, 1)
+weak_to = 4
+resists = 2
+armor = 0.0
+threat = 3.5
+heal_radius = 80.0
+heal_per_second = 0.06

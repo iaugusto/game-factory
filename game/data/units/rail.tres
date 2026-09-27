@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="UnitDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/unit_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/mastery_def.gd" id="t_m"]
+[ext_resource type="Resource" path="res://data/masteries/overcharge.tres" id="m_0"]
+[ext_resource type="Resource" path="res://data/masteries/capacitors.tres" id="m_1"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"rail"
+display_name = "Rail Cannon"
+description = "Pierces the first three in a lane. Charges forever."
+role = 1
+attack = 3
+hp = 180.0
+cost = 85
+upgrade_costs = PackedInt32Array(70, 110)
+damage = 26.0
+reload = 4.6
+reach = 320.0
+color = Color(0.6902, 0.5490, 1.0000, 1)
+level_damage_bonus = 0.35
+level_reload_bonus = 0.1
+damage_type = 2
+masteries = Array[ExtResource("t_m")]([ExtResource("m_0"), ExtResource("m_1")])
+mastery_cost = 140
+beam_max_targets = 3

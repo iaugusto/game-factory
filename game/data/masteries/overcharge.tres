@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="MasteryDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/mastery_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"overcharge"
+title = "Overcharge"
+description = "+25% damage."
+damage_bonus = 0.25

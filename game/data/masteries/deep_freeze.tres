@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="MasteryDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/mastery_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"deep_freeze"
+title = "Deep Freeze"
+description = "Slows 20% harder, 1 s longer."
+slow_bonus = 0.2
+slow_time_bonus = 1.0

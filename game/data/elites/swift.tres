@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EliteDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/elite_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"swift"
+title = "Swift"
+description = "45% faster: slow it with Cryo."
+speed_mult = 1.45
+tint = Color(0.55, 0.95, 1, 1)

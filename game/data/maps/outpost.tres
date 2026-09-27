@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="MapDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/map_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/path_def.gd" id="path_s"]
+[ext_resource type="Script" path="res://src/defs/wave_def.gd" id="t_w"]
+[ext_resource type="Resource" path="res://data/waves/wave_01.tres" id="w1"]
+[ext_resource type="Resource" path="res://data/waves/wave_02.tres" id="w2"]
+[ext_resource type="Resource" path="res://data/waves/wave_03.tres" id="w3"]
+[ext_resource type="Resource" path="res://data/waves/wave_04.tres" id="w4"]
+[ext_resource type="Resource" path="res://data/waves/wave_05.tres" id="w5"]
+[ext_resource type="Resource" path="res://data/waves/wave_06.tres" id="w6"]
+[ext_resource type="Resource" path="res://data/waves/wave_07.tres" id="w7"]
+[ext_resource type="Resource" path="res://data/waves/wave_08.tres" id="w8"]
+[ext_resource type="Resource" path="res://data/waves/wave_09.tres" id="w9"]
+[ext_resource type="Resource" path="res://data/waves/wave_10.tres" id="w10"]
+
+[sub_resource type="Resource" id="path_0"]
+script = ExtResource("path_s")
+points = PackedVector2Array(90, 0, 90, 860)
+spread = 30.0
+opens_at_wave = 1
+
+[sub_resource type="Resource" id="path_1"]
+script = ExtResource("path_s")
+points = PackedVector2Array(270, 0, 270, 860)
+spread = 30.0
+opens_at_wave = 1
+
+[sub_resource type="Resource" id="path_2"]
+script = ExtResource("path_s")
+points = PackedVector2Array(450, 0, 450, 860)
+spread = 30.0
+opens_at_wave = 1
+
+[resource]
+script = ExtResource("1_s")
+id = &"outpost"
+display_name = "Frontier Outpost"
+paths = Array[ExtResource("path_s")]([SubResource("path_0"), SubResource("path_1"), SubResource("path_2")])
+plots = PackedVector2Array(180, 250, 360, 250, 180, 500, 360, 500, 180, 725, 360, 725, 22, 615, 518, 615, 90, 876, 270, 876, 450, 876)
+barricade_slots = PackedVector2Array(90, 770, 270, 770, 450, 770)
+waves = Array[ExtResource("t_w")]([ExtResource("w1"), ExtResource("w2"), ExtResource("w3"), ExtResource("w4"), ExtResource("w5"), ExtResource("w6"), ExtResource("w7"), ExtResource("w8"), ExtResource("w9"), ExtResource("w10")])

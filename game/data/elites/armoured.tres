@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EliteDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/elite_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"armoured"
+title = "Armoured"
+description = "+3 armour and 30% more HP: piercing rounds or AP."
+hp_mult = 1.3
+armor_bonus = 3.0
+tint = Color(1, 0.85, 0.45, 1)

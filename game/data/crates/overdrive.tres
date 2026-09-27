@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CrateDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/crate_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"overdrive"
+display_name = "Overdrive Core"
+hp = 7.0
+reward = 6
+speed = 40.0
+radius = 18.0
+boost_rate_mult = 2.0
+boost_duration = 8.0
+color = Color(0.2902, 0.8784, 0.8157, 1)
