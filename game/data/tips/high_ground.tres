@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="TipDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/tip_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/tip_card.gd" id="2_c"]
+
+[sub_resource type="Resource" id="TipCard_0"]
+script = ExtResource("2_c")
+title = "High ground"
+body = "Gold-rimmed pads give the unit on them extra reach."
+focus = &"high_ground"
+
+[resource]
+script = ExtResource("1_s")
+id = &"high_ground"
+trigger = &"high_ground"
+priority = 30
+cards = Array[ExtResource("2_c")]([SubResource("TipCard_0")])

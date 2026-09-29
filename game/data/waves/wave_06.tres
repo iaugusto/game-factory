@@ -47,7 +47,7 @@ path = 1
 [sub_resource type="Resource" id="s4"]
 script = ExtResource("se")
 enemy = ExtResource("e_runner")
-count = 8
+count = 13
 start = 20.0
 interval = 0.35
 path = 1
@@ -96,5 +96,5 @@ path = 2
 script = ExtResource("w")
 spawns = Array[ExtResource("se")]([SubResource("s0"), SubResource("s1"), SubResource("s2"), SubResource("s3"), SubResource("s4"), SubResource("x0"), SubResource("x1")])
 crates = Array[ExtResource("cs")]([SubResource("c0"), SubResource("c1"), SubResource("c2"), SubResource("c3")])
-hp_scale = 3.84
+hp_scale = 3.888
 speed_scale = 1.15

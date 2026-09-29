@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SynergyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/synergy_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/stat_bonus.gd" id="2_b"]
+
+[sub_resource type="Resource" id="Bonus_a"]
+script = ExtResource("2_b")
+chill = 0.8
+chill_time = 1.0
+
+[sub_resource type="Resource" id="Bonus_b"]
+script = ExtResource("2_b")
+
+[resource]
+script = ExtResource("1_s")
+id = &"cold_rounds"
+title = "Cold Rounds"
+description = "The Rifleman's hits chill enemies (×0.8 speed, 1 s)."
+unit_a = &"rifleman"
+unit_b = &"frost"
+bonus_a = SubResource("Bonus_a")
+bonus_b = SubResource("Bonus_b")

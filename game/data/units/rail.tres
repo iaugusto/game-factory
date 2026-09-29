@@ -24,4 +24,4 @@ level_reload_bonus = 0.1
 damage_type = 2
 masteries = Array[ExtResource("t_m")]([ExtResource("m_0"), ExtResource("m_1")])
 mastery_cost = 140
-beam_max_targets = 3
+beam_max_targets = 2

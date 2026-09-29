@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/skill_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"thick_walls"
+title = "Thick Walls"
+description = "+40 gate HP."
+branch = 1
+tier = 1
+cost = 1
+key = &"wall_hp_bonus"
+value = 40.0

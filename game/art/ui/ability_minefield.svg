@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 48 48">
+<defs><radialGradient id="rg1" gradientUnits="objectBoundingBox" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#86985a" stop-opacity="0.55"/><stop offset="0.7" stop-color="#15181d" stop-opacity="1"/><stop offset="1" stop-color="#0d0f12" stop-opacity="1"/></radialGradient><radialGradient id="rg2" gradientUnits="objectBoundingBox" cx="0.4" cy="0.35" r="0.5"><stop offset="0" stop-color="#86985a" stop-opacity="1"/><stop offset="1" stop-color="#39432a" stop-opacity="1"/></radialGradient><radialGradient id="rg3" gradientUnits="objectBoundingBox" cx="0.4" cy="0.35" r="0.5"><stop offset="0" stop-color="#86985a" stop-opacity="1"/><stop offset="1" stop-color="#39432a" stop-opacity="1"/></radialGradient><radialGradient id="rg4" gradientUnits="objectBoundingBox" cx="0.4" cy="0.35" r="0.5"><stop offset="0" stop-color="#86985a" stop-opacity="1"/><stop offset="1" stop-color="#39432a" stop-opacity="1"/></radialGradient></defs>
+<circle cx="24" cy="24" r="22.5" fill="url(#rg1)" stroke="#c9b04a" stroke-width="3"/>
+<circle cx="19.05" cy="17" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="16.03" cy="22.24" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="9.98" cy="22.24" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="6.95" cy="17" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="9.97" cy="11.76" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="16.03" cy="11.76" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="13" cy="17" r="5.5" fill="url(#rg2)" stroke="#0c1116" stroke-width="1.1"/>
+<circle cx="13" cy="17" r="2.48" fill="#56626e" stroke="#0c1116" stroke-width="0.7"/>
+<circle cx="13" cy="17" r="0.99" fill="#ff3b2e"/>
+<circle cx="41.05" cy="17" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="38.02" cy="22.24" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="31.98" cy="22.24" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="28.95" cy="17" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="31.97" cy="11.76" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="38.02" cy="11.76" r="1.1" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="35" cy="17" r="5.5" fill="url(#rg3)" stroke="#0c1116" stroke-width="1.1"/>
+<circle cx="35" cy="17" r="2.48" fill="#56626e" stroke="#0c1116" stroke-width="0.7"/>
+<circle cx="35" cy="17" r="0.99" fill="#ff3b2e"/>
+<circle cx="35" cy="29" r="2" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="29.5" cy="38.53" r="2" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="18.5" cy="38.53" r="2" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="13" cy="29" r="2" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="18.5" cy="19.47" r="2" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="29.5" cy="19.47" r="2" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="24" cy="29" r="10" fill="url(#rg4)" stroke="#0c1116" stroke-width="1.1"/>
+<circle cx="24" cy="29" r="4.5" fill="#56626e" stroke="#0c1116" stroke-width="0.7"/>
+<circle cx="24" cy="29" r="1.8" fill="#ff3b2e"/>
+</svg>

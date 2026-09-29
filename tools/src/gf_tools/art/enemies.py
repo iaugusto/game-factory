@@ -12,11 +12,22 @@ The archetypes read by silhouette as much as by colour:
 - Spitter (ranged, disables units): a squat body under a swollen, glowing acid gland with a
   spout at the front; teal, with a lime glow. Its glob shuts a unit down for a few seconds.
 - Ravager (hunts units): hunched and broad-shouldered with two huge scything claws forward;
-  rust-red with ember eyes.
+  crimson with ember eyes (deeper than the Drone's orange, so the two never blur).
 - Splitter (bursts into Skitters): a bloated, translucent brood sac on short legs, the brood
   visible inside; sickly yellow.
-- Mender (heals the swarm): slender, with a glowing green halo organ over its back; soft green.
+- Mender (heals the swarm): slender and pale bone-white, with a glowing green halo organ over
+  its back (bone, not green, so it never reads as a Skitter).
 - Hive Queen (boss): huge; a swollen abdomen of glowing egg sacs, a spiked crown, eight legs.
+
+Stage 2 of the content expansion (docs/2026-09-27-content-expansion/):
+- Wasp (flies): a slim, amber-and-black striped body with a stinger and two pairs of glassy
+  wings that beat between the frames (the only enemy whose frames move wings, not legs).
+- Warden (shields its pack): a broad, plated steel-blue body carrying a glowing shield
+  projector dome on its back; the bubble itself is drawn by the game.
+- Burrower (dives): an earth-brown mole-cricket, low and segmented, with two huge shovel claws
+  forward.
+- Bombardier (sieges from range): an olive body under a tall bile-green sac feeding a stubby
+  mortar tube pointed forward.
 """
 
 from __future__ import annotations
@@ -28,6 +39,10 @@ from .svg import Svg, ellipse_points, polar, smooth_path
 
 # Frame-to-frame leg swing, degrees.
 SWING = 13.0
+# Readability floors (art units, before the per-enemy zoom): thinner legs and smaller eyes
+# vanish at phone size.
+LEG_MIN = 1.6
+EYE_BOOST = 1.3
 
 
 def _leg(s: Svg, hip: tuple[float, float], deg: float, swing: float, l1: float, l2: float,
@@ -44,6 +59,7 @@ def _legs(s: Svg, cx: float, hips: list[tuple[float, float]], angles: list[float
           highlight: str | None = None) -> None:
     """Pairs of legs, mirrored across x = cx, with a tripod gait: legs alternate groups and
     the right side swings opposite to the left."""
+    width = max(width, LEG_MIN)
     for i, ((hx, hy), a, b) in enumerate(zip(hips, angles, bends)):
         group = 1 if i % 2 == 0 else -1
         sw = SWING * group * (1 if frame == 0 else -1)
@@ -55,7 +71,7 @@ def _shell(s: Svg, d: str, dark: str, mid: str, light: str, hl: tuple[float, flo
     """A glossy chitin shape: outlined, lit from the upper left."""
     fill = s.radial([(0, light, 1), (0.45, mid, 1), (1, dark, 1)], cx=hl[0], cy=hl[1], r=0.85,
                     fx=hl[0] - 0.05, fy=hl[1] - 0.05)
-    s.outlined(d, fill, P.INK, 1.1)
+    s.outlined(d, fill, P.INK, 1.4)
 
 
 def _gloss(s: Svg, cx: float, cy: float, rx: float, ry: float, opacity: float = 0.5) -> None:
@@ -65,6 +81,7 @@ def _gloss(s: Svg, cx: float, cy: float, rx: float, ry: float, opacity: float = 
 
 
 def _eye(s: Svg, x: float, y: float, r: float, glow: str) -> None:
+    r *= EYE_BOOST
     s.glow(x, y, r * 3.2, glow, 0.55)
     s.circle(x, y, r, fill=glow, stroke=P.INK, stroke_width=0.5)
     s.circle(x - r * 0.3, y - r * 0.3, r * 0.35, fill="#ffffff", opacity=0.9)
@@ -313,30 +330,164 @@ def queen(s: Svg, frame: int) -> None:
         _eye(s, x, y, r, P.QUEEN[3])
 
 
+# --- Wasp ----------------------------------------------------------------------------------
+
+def wasp(s: Svg, frame: int) -> None:
+    dark, mid, light, _ = P.WASP
+    cx = 22.0
+    # two pairs of glassy wings; frames beat them (forward/back)
+    beat = 14 if frame == 0 else -10
+    for sgn in (-1, 1):
+        for k, (length, width, base) in enumerate(((15.0, 5.2, 205), (11.5, 4.0, 170))):
+            a = base + beat * (1 if k == 0 else 0.6)
+            deg = a if sgn < 0 else 180 - a
+            tip = polar(cx + sgn * 2.5, 21, length, deg)
+            mid_pt = ((cx + sgn * 2.5 + tip[0]) / 2, (21 + tip[1]) / 2)
+            with s.group(f"rotate({deg} {mid_pt[0]} {mid_pt[1]})"):
+                s.ellipse(mid_pt[0], mid_pt[1], length / 2, width, fill="#e8f6ff", opacity=0.55,
+                          stroke=P.INK, stroke_width=0.6)
+                s.path(f"M{mid_pt[0] - length / 2 + 1},{mid_pt[1]} L{mid_pt[0] + length / 2 - 2},{mid_pt[1]}",
+                       stroke="#9ab8c8", stroke_width=0.5, opacity=0.8)
+    # tucked legs
+    _legs(s, cx, [(20, 22), (20, 24.5)], [200, 160], 3.5, 3.0, [-20, 20], dark, 1.0, frame)
+    # striped abdomen with a stinger at the back (up)
+    s.outlined(f"M{cx - 1.2},{3.5} L{cx},{0.8} L{cx + 1.2},{3.5} Z", P.INK, P.INK, 0.6)
+    _shell(s, smooth_path(ellipse_points(cx, 12.5, 5.2, 8.8, 14)), dark, mid, light)
+    for y in (8.0, 12.0, 16.0):
+        s.path(f"M{cx - 4.6},{y} Q{cx},{y + 1.8} {cx + 4.6},{y} L{cx + 4.2},{y + 1.8} "
+               f"Q{cx},{y + 3.4} {cx - 4.2},{y + 1.8} Z", fill=P.WASP_STRIPE, opacity=0.9)
+    _gloss(s, cx, 12.5, 5.2, 8.8, 0.45)
+    # thorax (a narrow waist) and head
+    _shell(s, smooth_path(ellipse_points(cx, 23.5, 4.2, 3.8, 12)), P.WASP_STRIPE, dark, mid)
+    _shell(s, smooth_path(ellipse_points(cx, 29.5, 4.4, 3.6, 12)), dark, mid, light)
+    for sgn in (-1, 1):  # antennae
+        s.limb([(cx + sgn * 1.2, 32), (cx + sgn * 3.5, 36), (cx + sgn * 5.5, 38.5)], P.WASP_STRIPE,
+               P.INK, 0.7)
+    _eye(s, cx - 2.3, 30.2, 1.2, "#2a1a08")
+    _eye(s, cx + 2.3, 30.2, 1.2, "#2a1a08")
+
+
+# --- Warden --------------------------------------------------------------------------------
+
+def warden(s: Svg, frame: int) -> None:
+    dark, mid, light, glow = P.WARDEN
+    cx = 26.0
+    _legs(s, cx, [(18, 24), (17.5, 28), (18, 32)], [212, 182, 150], 7.0, 7.0, [-25, 8, 30], mid,
+          2.4, frame, light)
+    # broad plated body
+    _shell(s, smooth_path(ellipse_points(cx, 22, 13, 13.5, 18)), dark, mid, light)
+    for sgn in (-1, 1):  # side plates
+        s.path(f"M{cx + sgn * 4},{11} Q{cx + sgn * 12},{15} {cx + sgn * 11},{30}", fill="none",
+               stroke=dark, stroke_width=1.3, opacity=0.9)
+        s.path(f"M{cx + sgn * 4.6},{12} Q{cx + sgn * 11.4},{16} {cx + sgn * 10.4},{29}", fill="none",
+               stroke=light, stroke_width=0.6, opacity=0.5)
+    # the shield projector: a glowing dome with a ring around it
+    s.glow(cx, 19, 14, glow, 0.7)
+    s.circle(cx, 19, 7.5, fill="none", stroke=glow, stroke_width=1.6, opacity=0.9)
+    s.circle(cx, 19, 5, fill=s.radial([(0, "#ffffff", 1), (0.45, glow, 1), (1, "#1a5a9a", 1)],
+                                      cx=0.4, cy=0.35), stroke=P.INK, stroke_width=0.9)
+    for a in (30, 150, 270):  # emitter studs
+        x, y = polar(cx, 19, 7.5, a)
+        s.circle(x, y, 1.2, fill=light, stroke=P.INK, stroke_width=0.5)
+    # armoured head
+    _shell(s, smooth_path(ellipse_points(cx, 37, 7, 5, 12)), dark, dark, mid)
+    s.outlined(f"M{cx - 7},{38} Q{cx},{44} {cx + 7},{38} Q{cx},{41} {cx - 7},{38} Z", light, P.INK, 0.7)
+    _eye(s, cx - 3, 37.5, 1.1, glow)
+    _eye(s, cx + 3, 37.5, 1.1, glow)
+
+
+# --- Burrower ------------------------------------------------------------------------------
+
+def burrower(s: Svg, frame: int) -> None:
+    dark, mid, light, glow = P.BURROWER
+    cx = 24.0
+    _legs(s, cx, [(19, 18), (19, 22)], [205, 170], 6.0, 6.0, [-20, 25], mid, 1.9, frame, light)
+    # long segmented body, low to the ground
+    for k, (y, rx, ry) in enumerate(((8, 6.2, 4.4), (14, 7.6, 4.6), (20, 8.2, 4.6), (26, 8.0, 4.4))):
+        _shell(s, smooth_path(ellipse_points(cx, y, rx, ry, 14)), dark, mid, light)
+        s.path(f"M{cx - rx + 1.5},{y + 1} Q{cx},{y + 3} {cx + rx - 1.5},{y + 1}", fill="none",
+               stroke=dark, stroke_width=0.8, opacity=0.8)
+    # bristles along the back
+    for y in (6, 12, 18, 24):
+        for sgn in (-1, 1):
+            s.line((cx + sgn * 2, y), (cx + sgn * 3.2, y - 2), stroke=light, stroke_width=0.6, opacity=0.7)
+    # two huge shovel claws forward, digging with the gait
+    sw = 4 * (1 if frame == 0 else -1)
+    for sgn in (-1, 1):
+        base = (cx + sgn * 5, 31)
+        elbow = (cx + sgn * 11, 35 + sw * sgn * 0.25)
+        s.limb([base, elbow], mid, P.INK, 3.0, light)
+        blade = (f"M{elbow[0] - sgn * 1},{elbow[1] - 2} L{elbow[0] + sgn * 5},{elbow[1] + 3} "
+                 f"L{elbow[0] + sgn * 2},{elbow[1] + 8} L{elbow[0] - sgn * 3},{elbow[1] + 6} Z")
+        s.outlined(blade, s.linear([(0, light, 1), (1, dark, 1)]), P.INK, 0.8)
+        for t in range(3):  # claw teeth
+            x0 = elbow[0] + sgn * (2 - t * 1.8)
+            y0 = elbow[1] + 6.5 + t * 0.4
+            s.outlined(f"M{x0 - 0.8},{y0} L{x0},{y0 + 2.4} L{x0 + 0.8},{y0} Z", "#f2e6d0", P.INK, 0.4)
+    # blunt head
+    _shell(s, smooth_path(ellipse_points(cx, 33, 6.2, 4.6, 12)), dark, dark, mid)
+    _eye(s, cx - 2.4, 34.5, 0.9, glow)
+    _eye(s, cx + 2.4, 34.5, 0.9, glow)
+
+
+# --- Bombardier ----------------------------------------------------------------------------
+
+def bombardier(s: Svg, frame: int) -> None:
+    dark, mid, light, glow = P.BOMBARDIER
+    cx = 26.0
+    _legs(s, cx, [(18, 28), (17.5, 32), (18, 36)], [212, 182, 150], 6.5, 6.5, [-25, 8, 30], mid,
+          2.4, frame, light)
+    # squat body
+    _shell(s, smooth_path(ellipse_points(cx, 32, 10, 8, 16)), dark, mid, light)
+    # the bile sac: tall, glowing, veined, feeding the tube
+    s.glow(cx, 16, 16, glow, 0.5)
+    sac = s.radial([(0, "#f8ffd0", 1), (0.45, glow, 1), (1, "#4a7a08", 1)], cx=0.38, cy=0.3)
+    s.outlined(smooth_path(ellipse_points(cx, 16, 10, 12, 16, jitter=[0, 0.03, -0.02])), sac, P.INK, 1.1)
+    for (x, y) in ((cx - 6, 10), (cx + 7, 14), (cx - 4, 22)):
+        s.path(f"M{cx},{24} Q{(cx + x) / 2 + 1.5},{(24 + y) / 2} {x},{y}", fill="none", stroke="#4a7a08",
+               stroke_width=0.8, opacity=0.7)
+    for (x, y, r) in ((cx - 3, 12, 1.6), (cx + 3.5, 17, 1.1), (cx + 0.5, 8, 0.9)):
+        s.circle(x, y, r, fill="#ffffff", opacity=0.7)
+    # the mortar tube, forward
+    s.outlined(f"M{cx - 3.5},{36} L{cx - 3},{46} L{cx + 3},{46} L{cx + 3.5},{36} Z",
+               s.linear([(0, light, 1), (1, dark, 1)]), P.INK, 0.9)
+    s.ellipse(cx, 46, 3.4, 1.4, fill=P.INK)
+    s.glow(cx, 46, 3.5, glow, 0.8)
+    for sgn in (-1, 1):
+        _eye(s, cx + sgn * 6.5, 37, 1.0, glow)
+
+
 # --- registry ------------------------------------------------------------------------------
 
-# id -> (draw function, frame box size in art units)
-ENEMIES: dict[str, tuple[Callable[[Svg, int], None], float]] = {
-    "grunt": (drone, 44.0),
-    "runner": (skitter, 44.0),
-    "brute": (carapace, 64.0),
-    "spitter": (spitter, 48.0),
-    "ravager": (ravager, 52.0),
-    "splitter": (splitter, 52.0),
-    "mender": (mender, 44.0),
-    "boss": (queen, 128.0),
+# id -> (draw function, frame box size in art units, zoom). Each enemy is drawn in its box and
+# then scaled by `zoom` into a box `zoom` times bigger. Only the three smallest grow (10%), so
+# they read on a phone; the user judged bigger zooms (1.25-1.35) too big for the lanes.
+ENEMIES: dict[str, tuple[Callable[[Svg, int], None], float, float]] = {
+    "grunt": (drone, 44.0, 1.1),
+    "runner": (skitter, 44.0, 1.1),
+    "brute": (carapace, 64.0, 1.0),
+    "spitter": (spitter, 48.0, 1.0),
+    "ravager": (ravager, 52.0, 1.0),
+    "splitter": (splitter, 52.0, 1.0),
+    "mender": (mender, 44.0, 1.1),
+    "boss": (queen, 128.0, 1.0),
+    "wasp": (wasp, 44.0, 1.1),
+    "warden": (warden, 52.0, 1.0),
+    "burrower": (burrower, 48.0, 1.0),
+    "bombardier": (bombardier, 52.0, 1.0),
 }
 
 
 def walk_atlas(enemy_id: str) -> Svg:
     """The two-frame walk atlas for `enemy_id`: frames side by side, each `box` square."""
-    draw, box = ENEMIES[enemy_id]
-    s = Svg(box * 2, box)
+    draw, box, zoom = ENEMIES[enemy_id]
+    out = round(box * zoom)
+    s = Svg(out * 2, out)
     for frame in (0, 1):
         # Each frame is clipped to its own box so nothing bleeds into its neighbour (texture
         # filtering at the seam would otherwise show it).
         clip = s.clip(f'<rect x="0.5" y="0.5" width="{box - 1}" height="{box - 1}"/>')
-        with s.group(f"translate({box * frame},0)"):
+        with s.group(f"translate({out * frame},0) scale({out / box})"):
             with s.group(None, clip_path=clip):
                 draw(s, frame)
     return s

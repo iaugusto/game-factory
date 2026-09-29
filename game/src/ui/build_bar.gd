@@ -10,11 +10,10 @@ signal start_pressed
 signal repair_pressed
 
 ## Height of the bar; tests check no plot sits under it.
-const HEIGHT: float = 150.0
+const HEIGHT: float = 128.0
 
 var start_button: Button
 var repair_button: Button
-var hint: Label
 var preview: HBoxContainer
 
 
@@ -24,7 +23,7 @@ func _init() -> void:
 	offset_bottom = Hud.HEIGHT + HEIGHT
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var panel := Panel.new()
-	panel.add_theme_stylebox_override("panel", UiTheme.panel(Color(0.04, 0.045, 0.06, 0.88), 0,
+	panel.add_theme_stylebox_override("panel", UiTheme.panel(Color(UiTheme.look.panel, 0.9), 0,
 			Color(0, 0, 0, 0), 0))
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -40,27 +39,24 @@ func _init() -> void:
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 6)
 	box.add_child(top)
-	var next := UiTheme.label("NEXT", 13, UiTheme.TEXT_DIM, 3)
+	var next := UiTheme.label("NEXT", &"caption", UiTheme.look.text_dim)
 	top.add_child(next)
 	preview = HBoxContainer.new()
 	preview.add_theme_constant_override("separation", 8)
 	preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(preview)
-	hint = UiTheme.label("Tap a pad to build · tap crates for coins", 13, UiTheme.TEXT_DIM, 3)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(hint)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	box.add_child(row)
 	repair_button = Button.new()
 	repair_button.custom_minimum_size = Vector2(130, 56)
-	UiTheme.style_button(repair_button, false, 13)
+	UiTheme.style_button(repair_button, false, &"caption")
 	repair_button.pressed.connect(func() -> void: repair_pressed.emit())
 	row.add_child(repair_button)
 	start_button = Button.new()
 	start_button.custom_minimum_size = Vector2(0, 56)
 	start_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UiTheme.style_button(start_button, true, 22, 14)
+	UiTheme.style_button(start_button, true, &"label", 14)
 	start_button.pressed.connect(func() -> void: start_pressed.emit())
 	row.add_child(start_button)
 	visible = false
@@ -93,7 +89,7 @@ static func _preview_item(e: EnemyDef, count: int, elite: EliteDef) -> Control:
 		icon.tooltip_text = "%s: %s" % [elite.title, elite.description]
 	item.add_child(icon)
 	var text: String = "★×%d" % count if elite != null else "×%d" % count
-	item.add_child(UiTheme.label(text, 13, elite.tint if elite != null else UiTheme.TEXT, 3))
+	item.add_child(UiTheme.label(text, &"caption", elite.tint if elite != null else UiTheme.look.text))
 	return item
 
 

@@ -92,14 +92,31 @@ static func card(id: StringName, key: StringName, value: float, weight: float = 
 	return c
 
 
-static func meta(id: StringName, key: StringName, per: float,
-		costs: PackedInt32Array) -> MetaUpgradeDef:
-	var m := MetaUpgradeDef.new()
-	m.id = id
-	m.key = key
-	m.value_per_level = per
-	m.costs = costs
-	return m
+static func skill(id: StringName, branch: int, tier: int, cost: int = 1,
+		key: StringName = &"gold_bonus", value: float = 0.1) -> SkillDef:
+	var k := SkillDef.new()
+	k.id = id
+	k.branch = branch
+	k.tier = tier
+	k.cost = cost
+	k.key = key
+	k.value = value
+	return k
+
+
+## A special attack of `kind` with round numbers: radius 70, delay 0.5 s, cooldown 10 s, damage
+## 30; tests set the kind's other fields.
+static func ability(kind: AbilityDef.Kind = AbilityDef.Kind.STRIKE, id: StringName = &"ab") \
+		-> AbilityDef:
+	var a := AbilityDef.new()
+	a.id = id
+	a.short_name = "AB"
+	a.kind = kind
+	a.radius = 70.0
+	a.delay = 0.5
+	a.cooldown = 10.0
+	a.damage = 30.0
+	return a
 
 
 ## A config with the given waves and the fixture map. Enemies walk exactly on their path's

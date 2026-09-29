@@ -26,6 +26,18 @@ extends RefCounted
 ##   Ravager): priority barricade > a unit in reach > the gate
 ##   (docs/2026-09-26-new-enemies-and-destroyable-units/). Splitters burst into a brood on
 ##   death, Menders heal their neighbours, and elites (EliteDef) change one property.
+## - **Skill-tree rules** (docs/2026-09-27-sectors-and-skill-tree/): a destroyed unit may explode
+##   (RunModifiers.death_blast), and the gate may bite back at its attackers (gate_thorns).
+##   Both happen during the enemy move pass, which can't remove enemies from the path lists it
+##   walks, so their damage is queued and applied right after it (_resolve_queued).
+## - **Special attacks** (AbilityDef, called through Run.call_ability): a Cast lands after its
+##   delay, then acts by kind: a blast (STRIKE), a freeze (FREEZE: Enemy.stun), a burning strip
+##   (BURN: a Hazard that burns for a while), mines on a path (MINES: each a Mine that waits for
+##   an enemy), or repairs (REPAIR). Like the queued damage, they resolve after the move pass.
+## - **Stage 2 enemies** (docs/2026-09-27-content-expansion/): Wasps fly (over the barricade,
+##   mud and escorts; ground effects miss them), Wardens shield everyone near them
+##   (Enemy.shield soaks damage first), Burrowers dive underground (untargetable, under the
+##   barricade), and Bombardiers stop short of the gate and lob globs at it (Lob).
 ##
 ## Coins earned and wall damage dealt are accumulated in `pending_gold` / `pending_wall_damage`
 ## and drained by Run every tick: the run, not the sim, owns the wall and the purse.
@@ -60,18 +72,39 @@ signal unit_struck(plot: Plot, enemy: Enemy, damage: float)
 signal unit_destroyed(plot: Plot, def: UnitDef)
 ## A Mender's heal pulse (once a second while it heals someone), for the view.
 signal mender_pulse(enemy: Enemy)
+## A fallen unit exploded (the tree's Last Stand) at `pos`, hitting everything within `radius`.
+signal unit_blast(pos: Vector2, radius: float)
+## Unit links were recomputed (Synergies.compute).
+signal synergies_changed
+## A special attack was called; it lands when cast.t runs out (it is in `casts` until then).
+signal ability_called(cast: Cast)
+## It landed: its effect has been applied (a burn's Hazard or MINES' Mines now exist).
+signal ability_landed(cast: Cast)
+## A mine went off under an enemy (its damage has been dealt).
+signal mine_exploded(mine: Mine)
+## A Bombardier lobbed a glob at the gate (it is in `lobs` until it lands).
+signal enemy_lobbed(lob: Lob)
+## It landed: the gate took its damage (enemy_struck was emitted too, for the tallies).
+signal lob_landed(lob: Lob)
+## An enemy dived underground, or surfaced.
+signal enemy_burrowed(enemy: Enemy)
+signal enemy_surfaced(enemy: Enemy)
+## A Warden's shield soaked (part of) a hit.
+signal shield_hit(enemy: Enemy, absorbed: float)
 
 ## Reload countdowns within this of zero count as ready, so float drift in `cooldown - dt`
 ## never delays a shot by a tick (a 0.5 s reload fires every 30 ticks at 60 Hz, exactly).
 const READY_EPSILON: float = 1e-6
 ## Half the barricade's depth along a path (enemies stop just in front of it), and how close a
 ## path's centre line must pass to a slot to be blocked by a barricade there.
-const BARRICADE_HALF_DEPTH: float = 12.0
+const BARRICADE_HALF_DEPTH: float = 16.0
 const BARRICADE_REACH: float = 40.0
 ## Escorts: how many enemies ahead are checked, and how much bigger (radius) one must be to
 ## block a smaller one.
 const ESCORT_LOOKAHEAD: int = 4
 const ESCORT_SIZE_GAP: float = 5.0
+## How often Wardens' auras are refreshed (seconds; see _shield).
+const SHIELD_PERIOD: float = 0.1
 
 
 class Enemy:
@@ -105,9 +138,33 @@ class Enemy:
 	var strike_timer: float = 0.0
 	## Seconds until it may spit again (spitters only).
 	var spit_timer: float = 0.0
+	## Seconds left frozen solid (a FREEZE ability): it neither moves nor acts.
+	var stun: float = 0.0
+	## Shield HP from a Warden's aura (soaks damage before hp), and the cap of the strongest
+	## aura it stands in this tick (0: none; the shield then holds but doesn't refill).
+	var shield: float = 0.0
+	var shield_max: float = 0.0
+	## Burrowers: underground until `d` reaches `surface_d` (-1: on the surface), and seconds
+	## of surface walking left before the next dive.
+	var surface_d: float = -1.0
+	var burrow_timer: float = 0.0
+	## Bombardiers: stopped at siege range, lobbing at the gate (also `sieging`).
+	var lobbing: bool = false
 
 	func pos() -> Vector2:
 		return Vector2(x, y)
+
+	func burrowed() -> bool:
+		return surface_d >= 0.0
+
+	## Units and every effect can reach it (alive and not underground).
+	func hittable() -> bool:
+		return alive and surface_d < 0.0
+
+	## Ground effects (shells, mines, fire, mud, the barricade) reach it: not underground and
+	## not flying.
+	func on_ground() -> bool:
+		return surface_d < 0.0 and not def.flying
 
 
 class Crate:
@@ -152,6 +209,10 @@ class Plot:
 	var terrain_reach: float = 0.0
 	## Distance from the plot to each path's centre line (static; targeting skips far paths).
 	var path_dist: PackedFloat32Array = PackedFloat32Array()
+	## Summed synergy bonuses, and the links behind them ([other plot index, SynergyDef]).
+	## Set by Synergies.compute when units are built, sold or destroyed.
+	var syn: StatBonus = StatBonus.new()
+	var links: Array = []
 
 	func is_empty() -> bool:
 		return def == null
@@ -193,6 +254,63 @@ class Spit:
 	var duration: float
 
 
+## A called special attack on its way: it lands at `pos` when `t` runs out. `power` scales its
+## damage (the wave's hp_scale when it was called).
+class Cast:
+	var id: int
+	var ability: AbilityDef
+	var pos: Vector2
+	var t: float
+	var power: float = 1.0
+
+
+## A stretch of one path's centre line: from `d_lo` to `d_hi` along path `path` (`points`).
+class Stretch:
+	var path: int
+	var d_lo: float
+	var d_hi: float
+	var points: PackedVector2Array
+
+
+## A burning stretch of road (a BURN ability) for `t` more seconds: `stretches` (one per path
+## through the tapped spot, see burn_layout), `half_width` to each side. Every enemy on it takes
+## `dps` a second, whichever path it walks, so where paths merge the fire burns for all of them
+## and at a fork it runs down every branch.
+class Hazard:
+	var id: int
+	var stretches: Array[Stretch]
+	var half_width: float
+	## The stretches grown by half_width: a cheap first test before the distance to them.
+	var bounds: Rect2
+	var t: float
+	var duration: float
+	var dps: float
+
+
+## A mine (a MINES ability) at distance `d` along `path`: it goes off when an enemy reaches it,
+## dealing `damage` within `radius` of `pos`.
+class Mine:
+	var id: int
+	var path: int
+	var d: float
+	var pos: Vector2
+	var damage: float
+	var radius: float
+
+
+## A Bombardier's glob on its way to the gate: it lands at `dest` when `t` reaches `duration`,
+## for `damage` (it lands even if the thrower dies meanwhile).
+class Lob:
+	var id: int
+	var enemy: Enemy
+	var start: Vector2
+	var dest: Vector2
+	var pos: Vector2
+	var t: float = 0.0
+	var duration: float
+	var damage: float
+
+
 ## A unit's projectile in flight (BULLET or SHELL; hitscan and beams have none).
 class Shot:
 	var id: int
@@ -230,6 +348,13 @@ var path_enemies: Array[Array] = []
 var path_crates: Array[Array] = []
 var shots: Array[Shot] = []
 var spits: Array[Spit] = []
+var casts: Array[Cast] = []
+var hazards: Array[Hazard] = []
+var mines: Array[Mine] = []
+var lobs: Array[Lob] = []
+## Wardens on the field (kept by spawn and kill), so the shield pass costs nothing without them.
+var _wardens: int = 0
+var _shield_clock: float = 0.0
 
 var time: float = 0.0
 ## Unit fire-rate boost from a boost crate: multiplier and seconds left.
@@ -238,6 +363,8 @@ var boost_time: float = 0.0
 
 var pending_gold: int = 0
 var pending_wall_damage: float = 0.0
+## Gate HP restored this tick (a REPAIR ability), drained by Run like the damage.
+var pending_gate_heal: float = 0.0
 var kills: int = 0
 var crates_broken: int = 0
 
@@ -245,6 +372,13 @@ var _wave: WaveDef
 var _events: Array[WaveSchedule.Event] = []
 var _cursor: int = 0
 var _next_id: int = 1
+## Ids of casts and mines: a counter of their own, so calling an ability never shifts enemy ids
+## (which seed their sideways spread).
+var _cast_ids: int = 0
+## Damage queued during the enemy move pass: blasts as (x, y, damage), thorns per enemy.
+var _queued_blasts: Array[Vector3] = []
+var _queued_thorns: Array[Enemy] = []
+var _queued_thorn_damage: PackedFloat32Array = PackedFloat32Array()
 
 
 func _init(run_config: RunConfig, run_mods: RunModifiers, streams: RngStreams,
@@ -305,6 +439,10 @@ func begin_wave(wave: WaveDef, wave_number: int = 1) -> void:
 		path_crates[i].clear()
 	shots.clear()
 	spits.clear()
+	lobs.clear()
+	_wardens = 0
+	_shield_clock = 0.0
+	_clear_abilities()
 	for plot: Plot in plots:
 		plot.cooldown = 0.0
 		plot.target = null
@@ -322,6 +460,8 @@ func end_wave() -> void:
 			crate_lost.emit(c)
 	shots.clear()
 	spits.clear()
+	lobs.clear()
+	_clear_abilities()
 	boost_time = 0.0
 	boost_mult = 1.0
 	for plot: Plot in plots:
@@ -356,23 +496,27 @@ func boost_rate_mult() -> float:
 
 ## A unit's effective reload at `level` with `mastery`, after the run's modifiers and any
 ## active boost.
-func reload_for(def: UnitDef, level: int, mastery: MasteryDef = null) -> float:
-	var bonus: float = mods.unit_rate_bonus + (mastery.reload_bonus if mastery else 0.0)
+func reload_for(def: UnitDef, level: int, mastery: MasteryDef = null,
+		syn: StatBonus = null) -> float:
+	var bonus: float = mods.unit_rate_bonus + (mastery.reload_bonus if mastery else 0.0) \
+			+ (syn.reload if syn else 0.0)
 	return def.reload_at(level) / ((1.0 + bonus) * boost_rate_mult())
 
 
 ## A unit's damage per shot at `level` with `mastery`, after the run's modifiers (before the
 ## chart and crits).
-func damage_for(def: UnitDef, level: int, mastery: MasteryDef = null) -> float:
+func damage_for(def: UnitDef, level: int, mastery: MasteryDef = null,
+		syn: StatBonus = null) -> float:
 	return def.damage_at(level) * (1.0 + mods.unit_damage_bonus
-			+ (mastery.damage_bonus if mastery else 0.0))
+			+ (mastery.damage_bonus if mastery else 0.0) + (syn.damage if syn else 0.0))
 
 
 ## A unit's targeting radius with `mastery` (and `terrain`, a high-ground bonus), after the
 ## run's modifiers.
-func reach_for(def: UnitDef, mastery: MasteryDef = null, terrain: float = 0.0) -> float:
+func reach_for(def: UnitDef, mastery: MasteryDef = null, terrain: float = 0.0,
+		syn: StatBonus = null) -> float:
 	return def.reach * (1.0 + mods.unit_reach_bonus + terrain
-			+ (mastery.reach_bonus if mastery else 0.0))
+			+ (mastery.reach_bonus if mastery else 0.0) + (syn.reach if syn else 0.0))
 
 
 func reload_of(def: UnitDef, level: int) -> float:
@@ -389,15 +533,21 @@ func reach_of(def: UnitDef) -> float:
 
 ## The stats of what stands on `plot` right now.
 func plot_reload(plot: Plot) -> float:
-	return reload_for(plot.def, plot.level, plot.mastery)
+	return reload_for(plot.def, plot.level, plot.mastery, plot.syn)
 
 
 func plot_damage(plot: Plot) -> float:
-	return damage_for(plot.def, plot.level, plot.mastery)
+	return damage_for(plot.def, plot.level, plot.mastery, plot.syn)
 
 
 func plot_reach(plot: Plot) -> float:
-	return reach_for(plot.def, plot.mastery, plot.terrain_reach)
+	return reach_for(plot.def, plot.mastery, plot.terrain_reach, plot.syn)
+
+
+## Recompute every plot's links and synergy bonuses (after a build, sell or destruction).
+func refresh_synergies() -> void:
+	Synergies.compute(plots, config)
+	synergies_changed.emit()
 
 
 ## Damage a hit of `raw` of `type` really deals to `e`: armour first (reduced by `pierce`, never
@@ -426,12 +576,18 @@ func step(dt: float) -> void:
 		boost_time = maxf(0.0, boost_time - dt)
 	_spawn_due()
 	_move_enemies(dt)
+	_resolve_queued()
+	_land_casts(dt)
+	_burn(dt)
+	_trip_mines()
 	_move_crates(dt)
 	_spit_enemies(dt)
 	_heal(dt)
+	_shield(dt)
 	_fire_plots(dt)
 	_move_shots(dt)
 	_move_spits(dt)
+	_move_lobs(dt)
 
 
 # --- spawning ---------------------------------------------------------------------------
@@ -450,6 +606,7 @@ func _spawn_due() -> void:
 			e.hp = e.max_hp
 			e.speed = ev.enemy.speed * _wave.speed_scale * (e.elite.speed_mult if e.elite else 1.0)
 			e.offset = _spread(ev.path, e.id, ev.enemy.radius)
+			_arrive(e)
 			_place_enemy(e)
 			path_enemies[e.path].append(e)
 			enemy_spawned.emit(e)
@@ -462,6 +619,17 @@ func _spawn_due() -> void:
 			_place_crate(c)
 			path_crates[c.path].append(c)
 			crate_spawned.emit(c)
+
+
+## Set up a new enemy's own clocks (spawns and a Splitter's brood alike).
+func _arrive(e: Enemy) -> void:
+	e.burrow_timer = e.def.burrow_every
+	if _is_warden(e.def):
+		_wardens += 1
+
+
+static func _is_warden(def: EnemyDef) -> bool:
+	return def.shield_radius > 0.0 and def.shield_amount > 0.0
 
 
 ## Deterministic spread around the path's centre line, so its enemies don't walk in one file.
@@ -509,6 +677,9 @@ func _move_enemies(dt: float) -> void:
 					e.slow_factor = 1.0
 			if e.elite != null and e.elite.regen > 0.0:
 				e.hp = minf(e.max_hp, e.hp + e.max_hp * e.elite.regen * dt)
+			if e.stun > 0.0:
+				e.stun = maxf(0.0, e.stun - dt)
+				continue  # frozen solid: no walking, no striking
 			if e.sieging and e.at_barricade and not _blocks(e):
 				# The barricade broke (or was never rebuilt): walk on.
 				e.sieging = false
@@ -524,11 +695,23 @@ func _move_enemies(dt: float) -> void:
 				continue
 			var before: float = e.d
 			e.d += e.speed * e.slow_factor * _terrain_speed(e) * dt
-			var shield: Enemy = _big_one_ahead(enemies, i) \
-					if biggest >= e.def.radius + ESCORT_SIZE_GAP else null
-			if shield != null:
-				e.d = minf(e.d, maxf(before, shield.d - (shield.def.radius + e.def.radius) * 0.7))
-			if _blocks(e):
+			var escort: Enemy = _big_one_ahead(enemies, i) \
+					if biggest >= e.def.radius + ESCORT_SIZE_GAP and e.on_ground() else null
+			if escort != null:
+				e.d = minf(e.d, maxf(before, escort.d - (escort.def.radius + e.def.radius) * 0.7))
+			_burrow(e, geo, dt)
+			if e.def.siege_range > 0.0 and not e.burrowed():
+				var post: float = maxf(0.0, geo.length - e.def.siege_range)
+				var walled: bool = _blocks(e) and e.on_ground() and _barricade_stop(e) < post
+				if before <= post and e.d >= post and not walled:
+					e.d = post
+					_place_enemy(e)
+					e.sieging = true
+					e.lobbing = true
+					e.strike_timer = 0.0
+					_strike(e)
+					continue
+			if _blocks(e) and e.on_ground():
 				var stop: float = _barricade_stop(e)
 				if before <= stop and e.d >= stop:
 					e.d = stop
@@ -549,6 +732,7 @@ func _move_enemies(dt: float) -> void:
 					continue
 			if e.d >= geo.length:
 				e.d = geo.length
+				_surface(e)
 				_place_enemy(e)
 				e.sieging = true
 				e.strike_timer = 0.0
@@ -558,9 +742,39 @@ func _move_enemies(dt: float) -> void:
 		_sort_desc(enemies)
 
 
-## Mud slows whoever walks through it (zones multiply).
+## Burrowers: count down surface time (paused while slowed), dive for burrow_length (never
+## where it would surface within reach of the gate: it must come up to strike), and surface
+## once `d` reaches the far end. Frozen or sieging enemies don't get here.
+func _burrow(e: Enemy, geo: PathGeo, dt: float) -> void:
+	if e.def.burrow_every <= 0.0 or e.def.burrow_length <= 0.0:
+		return
+	if e.burrowed():
+		if e.d >= e.surface_d:
+			_surface(e)
+		return
+	if e.slow_factor < 1.0:
+		return  # chilled: too stiff to dig (why Frost counters it)
+	e.burrow_timer -= dt
+	if e.burrow_timer > 0.0:
+		return
+	if e.d + e.def.burrow_length >= geo.length - e.def.radius:
+		e.burrow_timer = 0.0  # too near the gate: it stays up
+		return
+	e.surface_d = e.d + e.def.burrow_length
+	enemy_burrowed.emit(e)
+
+
+func _surface(e: Enemy) -> void:
+	if not e.burrowed():
+		return
+	e.surface_d = -1.0
+	e.burrow_timer = e.def.burrow_every
+	enemy_surfaced.emit(e)
+
+
+## Mud slows whoever walks through it (zones multiply); flyers and burrowers pass it.
 func _terrain_speed(e: Enemy) -> float:
-	if _mud.is_empty():
+	if _mud.is_empty() or not e.on_ground():
 		return 1.0
 	var k: float = 1.0
 	for zone: ZoneDef in _mud:
@@ -576,7 +790,7 @@ func _big_one_ahead(enemies: Array, i: int) -> Enemy:
 	for k: int in range(i - 1, maxi(-1, i - 1 - ESCORT_LOOKAHEAD), -1):
 		var a: Enemy = enemies[k]
 		var e: Enemy = enemies[i]
-		if a.def.radius >= e.def.radius + ESCORT_SIZE_GAP \
+		if a.def.radius >= e.def.radius + ESCORT_SIZE_GAP and a.on_ground() and not a.lobbing \
 				and absf(a.offset - e.offset) < (a.def.radius + e.def.radius) * 0.9:
 			return a
 	return null
@@ -623,8 +837,47 @@ func _strike(e: Enemy) -> void:
 		if barricade.hp <= 0.0:
 			barricade_broken.emit()
 		return
+	if e.lobbing:
+		_lob(e)
+		return
 	pending_wall_damage += e.def.wall_damage
 	enemy_struck.emit(e, e.def.wall_damage)
+	if mods.gate_thorns > 0.0:
+		_queued_thorns.append(e)
+		_queued_thorn_damage.append(mods.gate_thorns * maxf(0.05, e.def.attack_interval))
+
+
+## A Bombardier's strike: a glob flies from it to the gate below its path's end.
+func _lob(e: Enemy) -> void:
+	var lob := Lob.new()
+	lob.id = _take_id()
+	lob.enemy = e
+	lob.start = e.pos()
+	var end: Vector2 = geos[e.path].point_at(geos[e.path].length)
+	lob.dest = Vector2(end.x, config.wall_y)
+	lob.pos = lob.start
+	lob.duration = maxf(0.05, e.def.lob_time)
+	lob.damage = e.def.wall_damage
+	lobs.append(lob)
+	enemy_lobbed.emit(lob)
+
+
+## Globs fly on (a straight line in the sim; the view draws the arc) and hit the gate. No gate
+## thorns: the thrower is far away.
+func _move_lobs(dt: float) -> void:
+	if lobs.is_empty():
+		return
+	var keep: Array[Lob] = []
+	for lob: Lob in lobs:
+		lob.t += dt
+		lob.pos = lob.start.lerp(lob.dest, minf(1.0, lob.t / lob.duration))
+		if lob.t < lob.duration:
+			keep.append(lob)
+			continue
+		pending_wall_damage += lob.damage
+		enemy_struck.emit(lob.enemy, lob.damage)
+		lob_landed.emit(lob)
+	lobs = keep
 
 
 func _move_crates(dt: float) -> void:
@@ -660,7 +913,7 @@ static func _sort_desc(items: Array) -> void:
 func _spit_enemies(dt: float) -> void:
 	for group: Array in path_enemies:
 		for e: Enemy in group:
-			if e.def.spit_interval <= 0.0 or e.sieging:
+			if e.def.spit_interval <= 0.0 or e.sieging or e.stun > 0.0 or e.burrowed():
 				continue
 			e.spit_timer = maxf(0.0, e.spit_timer - dt)
 			if e.spit_timer > READY_EPSILON:
@@ -721,7 +974,8 @@ func _fire_plots(dt: float) -> void:
 			plot.disabled = maxf(0.0, plot.disabled - dt)
 			continue
 		plot.cooldown = maxf(0.0, plot.cooldown - dt)
-		if plot.target != null and not (plot.target.alive and _in_reach(plot, plot.target.pos())):
+		if plot.target != null and not (plot.target.hittable()
+				and _in_reach(plot, plot.target.pos())):
 			plot.target = null
 		if plot.cooldown > READY_EPSILON:
 			if plot.target != null:
@@ -766,12 +1020,19 @@ func first_in_reach(plot: Plot) -> Enemy:
 			var e: Enemy = enemies[i]
 			if e.d < d_lo or geo.length - e.d >= best_left:
 				break
-			if _in_reach(plot, e.pos()):
+			if _in_reach(plot, e.pos()) and can_target(plot, e):
 				best = e
 				best_left = geo.length - e.d
 				break
 			i += 1
 	return best
+
+
+## Whether the unit on `plot` may shoot at `e`: never underground, and shells never at flyers.
+static func can_target(plot: Plot, e: Enemy) -> bool:
+	if e.burrowed():
+		return false
+	return not (e.def.flying and plot.def.attack == UnitDef.Attack.SHELL)
 
 
 ## Index of the first enemy (in a d-descending path) with d <= `max_d`.
@@ -790,24 +1051,30 @@ static func _first_at_or_below(enemies: Array, max_d: float) -> int:
 func _fire_plot(plot: Plot, target: Enemy) -> void:
 	var def: UnitDef = plot.def
 	var m: MasteryDef = plot.mastery
-	var pierce: float = m.armor_pierce if m else 0.0
+	var syn: StatBonus = plot.syn
+	var pierce: float = (m.armor_pierce if m else 0.0) + syn.pierce
 	var dmg: float = plot_damage(plot)
-	if mods.crit_chance > 0.0 and rng.stream(&"combat").randf() < mods.crit_chance:
+	var crit: float = mods.crit_chance + syn.crit
+	if crit > 0.0 and rng.stream(&"combat").randf() < crit:
 		dmg *= config.crit_multiplier + mods.crit_mult_bonus
 	plot.shots_fired += 1
 	match def.attack:
 		UnitDef.Attack.HITSCAN:
 			unit_fired.emit(plot, target.pos())
+			_chill(target, syn)
 			_damage_enemy(target, dmg, def.damage_type, pierce)
 		UnitDef.Attack.BEAM:
 			unit_fired.emit(plot, target.pos())
 			var victims: Array[Enemy] = []
+			var cap: int = def.beam_max_targets + syn.beam_targets if def.beam_max_targets > 0 \
+					else 0
 			for e: Enemy in path_enemies[target.path]:  # furthest along first
-				if _in_reach(plot, e.pos()):
+				if e.hittable() and _in_reach(plot, e.pos()):
 					victims.append(e)
-					if def.beam_max_targets > 0 and victims.size() >= def.beam_max_targets:
+					if cap > 0 and victims.size() >= cap:
 						break
 			for e: Enemy in victims:
+				_chill(e, syn)
 				_damage_enemy(e, dmg, def.damage_type, pierce)
 		_:
 			var s := Shot.new()
@@ -822,17 +1089,268 @@ func _fire_plot(plot: Plot, target: Enemy) -> void:
 			s.damage = dmg
 			s.damage_type = def.damage_type
 			s.armor_pierce = pierce
-			s.splash = def.splash_radius * (1.0 + (m.splash_bonus if m else 0.0))
+			s.splash = def.splash_radius * (1.0 + (m.splash_bonus if m else 0.0) + syn.splash)
 			if def.slow_duration > 0.0:
 				s.slow = clampf(def.slow_factor - mods.frost_slow_bonus
-						- (m.slow_bonus if m else 0.0), 0.2, 1.0)
-				s.slow_time = def.slow_duration + (m.slow_time_bonus if m else 0.0)
+						- (m.slow_bonus if m else 0.0) - syn.slow, 0.2, 1.0)
+				s.slow_time = def.slow_duration + (m.slow_time_bonus if m else 0.0) \
+						+ syn.slow_time
+			elif syn.chill_time > 0.0:
+				s.slow = syn.chill  # a synergy's chill: this unit's hits slow briefly
+				s.slow_time = syn.chill_time
 			else:
 				s.slow = 1.0
 			if def.attack == UnitDef.Attack.SHELL:
 				s.duration = maxf(0.05, s.start.distance_to(s.dest) / s.speed)
 			shots.append(s)
 			unit_fired.emit(plot, target.pos())
+
+
+## A synergy's chill on an instant hit (hitscan, beam): slow `e` briefly.
+static func _chill(e: Enemy, syn: StatBonus) -> void:
+	if syn.chill_time > 0.0:
+		e.slow_factor = minf(e.slow_factor, syn.chill)
+		e.slow_timer = maxf(e.slow_timer, syn.chill_time)
+
+
+# --- special attacks --------------------------------------------------------------------
+
+## Call `ability` at `pos` with damage × `power`: it lands ability.delay s later (Run owns the
+## choice of ability and its cooldown). Returns the Cast (it is in `casts` until it lands).
+func cast(ability: AbilityDef, pos: Vector2, power: float = 1.0) -> Cast:
+	var c := Cast.new()
+	_cast_ids += 1
+	c.id = _cast_ids
+	c.ability = ability
+	c.pos = pos
+	c.t = ability.delay
+	c.power = power
+	casts.append(c)
+	ability_called.emit(c)
+	return c
+
+
+## Count casts down and land the due ones, in call order.
+func _land_casts(dt: float) -> void:
+	if casts.is_empty():
+		return
+	var due: Array[Cast] = []
+	var keep: Array[Cast] = []
+	for c: Cast in casts:
+		c.t -= dt
+		if c.t > 0.0:
+			keep.append(c)
+		else:
+			due.append(c)
+	casts = keep
+	for c: Cast in due:
+		_land(c)
+		ability_landed.emit(c)
+
+
+func _land(c: Cast) -> void:
+	var a: AbilityDef = c.ability
+	match a.kind:
+		AbilityDef.Kind.STRIKE:
+			for e: Enemy in enemies_within(c.pos, a.radius):
+				_apply_damage(e, a.damage * c.power)
+		AbilityDef.Kind.FREEZE:
+			for e: Enemy in enemies_within(c.pos, a.radius):
+				e.stun = maxf(e.stun, a.duration)
+				e.slow_factor = minf(e.slow_factor, a.slow)
+				e.slow_timer = maxf(e.slow_timer, a.duration + a.slow_time)
+				if a.damage > 0.0:
+					_apply_damage(e, a.damage * c.power)
+		AbilityDef.Kind.BURN:
+			var road: Array[Stretch] = burn_layout(a, c.pos)
+			if road.is_empty():
+				return
+			var h := Hazard.new()
+			h.id = c.id
+			h.stretches = road
+			h.half_width = burn_half_width(road)
+			var box := Rect2(road[0].points[0], Vector2.ZERO)
+			for st: Stretch in road:
+				for p: Vector2 in st.points:
+					box = box.expand(p)
+			h.bounds = box.grow(h.half_width)
+			h.t = a.duration
+			h.duration = a.duration
+			h.dps = a.damage * c.power
+			hazards.append(h)
+		AbilityDef.Kind.MINES:
+			_lay_mines(c)
+		AbilityDef.Kind.REPAIR:
+			pending_gate_heal += a.gate_heal
+			for plot: Plot in plots:
+				if not plot.is_empty():
+					plot.hp = minf(plot.max_hp, plot.hp + plot.max_hp * a.unit_heal)
+			if barricade.is_built() and barricade.max_hp > 0.0:
+				barricade.hp = minf(barricade.max_hp, barricade.hp + barricade.max_hp * a.unit_heal)
+
+
+## Every enemy whose body overlaps the circle at `pos` of `radius` (half its radius counts, as
+## for shells), not underground. A copy, so the caller may kill them.
+func enemies_within(pos: Vector2, radius: float) -> Array[Enemy]:
+	var out: Array[Enemy] = []
+	for group: Array in path_enemies:
+		for e: Enemy in group:
+			var r: float = radius + e.def.radius * 0.5
+			if e.hittable() and e.pos().distance_squared_to(pos) <= r * r:
+				out.append(e)
+	return out
+
+
+## Burning stretches burn whoever stands on them (within half_width of the centre line, plus
+## half its body), then go out.
+func _burn(dt: float) -> void:
+	if hazards.is_empty():
+		return
+	var keep: Array[Hazard] = []
+	for h: Hazard in hazards:
+		var victims: Array[Enemy] = []
+		for group: Array in path_enemies:
+			for e: Enemy in group:
+				if not e.on_ground():
+					continue  # flying over the fire, or tunnelling under it
+				var p: Vector2 = e.pos()
+				var reach: float = e.def.radius * 0.5
+				if h.bounds.grow(reach).has_point(p) and _on_fire(h, p, h.half_width + reach):
+					victims.append(e)
+		for e: Enemy in victims:
+			_apply_damage(e, h.dps * dt)
+		h.t -= dt
+		if h.t > 0.0:
+			keep.append(h)
+	hazards = keep
+
+
+## MINES: ability.mine_count mines along the open path nearest the tap (mine_layout).
+func _lay_mines(c: Cast) -> void:
+	var a: AbilityDef = c.ability
+	var layout: Array = mine_layout(a, c.pos)
+	if layout.is_empty():
+		return
+	var path: int = layout[0]
+	for d: float in layout[1]:
+		var m := Mine.new()
+		_cast_ids += 1
+		m.id = _cast_ids
+		m.path = path
+		m.d = d
+		m.pos = geos[path].point_at(d)
+		m.damage = a.damage * c.power
+		m.radius = a.radius
+		mines.append(m)
+
+
+## The open path nearest `pos` and the distance along it of its nearest point, as [path, d];
+## empty if no path is open. Aimed attacks that lie on the road (MINES, BURN) snap to it.
+func nearest_open_path(pos: Vector2) -> Array:
+	var best: int = -1
+	var best_near := Vector2(0.0, INF)
+	for i: int in open_paths:
+		var near: Vector2 = geos[i].nearest(pos)
+		if near.y < best_near.y:
+			best_near = near
+			best = i
+	return [] if best < 0 else [best, best_near.x]
+
+
+## Where a MINES ability called at `pos` lays its mines: [path index, distances along it], on the
+## open path nearest `pos`, centred on its nearest point and mine_spacing apart (kept on the
+## path). Empty if no path is open. The aim preview draws the same spots.
+func mine_layout(a: AbilityDef, pos: Vector2) -> Array:
+	var near: Array = nearest_open_path(pos)
+	if near.is_empty():
+		return []
+	var best: int = near[0]
+	var ds := PackedFloat32Array()
+	for k: int in a.mine_count:
+		ds.append(clampf(near[1] + (k - (a.mine_count - 1) / 2.0) * a.mine_spacing,
+				0.0, geos[best].length - 1.0))
+	return [best, ds]
+
+
+## Which road a BURN ability called at `pos` sets alight: on every open path through the spot
+## nearest `pos` (the nearest path, and any other within 2 px of it there: where paths share a
+## road, as at a fork or a merge), a stretch `length` long centred on that spot (shifted to stay
+## on the path). Stretches identical to an earlier one (a shared trunk) are dropped. Empty if no
+## path is open. The aim preview and the telegraph draw the same road.
+func burn_layout(a: AbilityDef, pos: Vector2) -> Array[Stretch]:
+	var out: Array[Stretch] = []
+	var near: Array = nearest_open_path(pos)
+	if near.is_empty():
+		return out
+	var spot: Vector2 = geos[near[0]].point_at(near[1])
+	for i: int in open_paths:
+		var on: Vector2 = geos[i].nearest(spot)
+		if on.y > 2.0:
+			continue
+		var st := Stretch.new()
+		st.path = i
+		var total: float = geos[i].length
+		st.d_lo = clampf(on.x - a.length / 2.0, 0.0, maxf(0.0, total - a.length))
+		st.d_hi = minf(st.d_lo + a.length, total)
+		st.points = geos[i].stretch(st.d_lo, st.d_hi)
+		var seen: bool = false
+		for other: Stretch in out:
+			seen = seen or other.points == st.points
+		if not seen:
+			out.append(st)
+	return out
+
+
+## How far to each side of the centre line the fire on `road` reaches: the widest sideways
+## spread an enemy can have on those paths, plus a margin, so it covers the whole road.
+func burn_half_width(road: Array[Stretch]) -> float:
+	var spread: float = 0.0
+	for st: Stretch in road:
+		spread = maxf(spread, config.map.paths[st.path].spread)
+	return spread + 8.0
+
+
+## Whether `p` is within `reach` of any of the hazard's stretches.
+static func _on_fire(h: Hazard, p: Vector2, reach: float) -> bool:
+	for st: Stretch in h.stretches:
+		if PathGeo.distance_to_polyline(st.points, p) <= reach:
+			return true
+	return false
+
+
+## A mine goes off when an enemy on its path stands on it (within half its body along the path).
+## Mines placed behind a walker wait for the next one.
+func _trip_mines() -> void:
+	if mines.is_empty():
+		return
+	var keep: Array[Mine] = []
+	for m: Mine in mines:
+		var enemies: Array = path_enemies[m.path]
+		var tripped: bool = false
+		var i: int = _first_at_or_below(enemies, m.d + 40.0)
+		while i < enemies.size():
+			var e: Enemy = enemies[i]
+			var reach: float = e.def.radius * 0.5 + 4.0
+			if e.d < m.d - reach:
+				break
+			if absf(e.d - m.d) <= reach and e.on_ground():
+				tripped = true
+				break
+			i += 1
+		if not tripped:
+			keep.append(m)
+			continue
+		for e: Enemy in enemies_within(m.pos, m.radius):
+			if e.on_ground():
+				_apply_damage(e, m.damage)
+		mine_exploded.emit(m)
+	mines = keep
+
+
+func _clear_abilities() -> void:
+	casts.clear()
+	hazards.clear()
+	mines.clear()
 
 
 ## Move unit projectiles and resolve arrivals, in list order (deterministic).
@@ -853,7 +1371,7 @@ func _move_shots(dt: float) -> void:
 			var reach: float = s.target.def.radius if s.target.alive else 0.0
 			if to_dest.length() <= step + reach:
 				s.pos = s.dest
-				if s.target.alive:
+				if s.target.hittable():
 					_bullet_hit(s)
 				continue
 			s.pos += to_dest.normalized() * step
@@ -876,7 +1394,7 @@ func _land_shell(s: Shot) -> void:
 	for group: Array in path_enemies:
 		for e: Enemy in group:
 			var r: float = s.splash + e.def.radius * 0.5
-			if e.pos().distance_squared_to(s.dest) <= r * r:
+			if e.on_ground() and e.pos().distance_squared_to(s.dest) <= r * r:
 				victims.append(e)
 	for e: Enemy in victims:
 		_damage_enemy(e, s.damage, s.damage_type, s.armor_pierce)
@@ -931,9 +1449,26 @@ func _damage_enemy(e: Enemy, raw: float, type: UnitDef.DamageType, pierce: float
 		enemy_hit.emit(e, dmg, 1)
 	elif dmg < raw - 1e-4:
 		enemy_hit.emit(e, dmg, -1)
+	_apply_damage(e, dmg)
+
+
+## Take `dmg` off `e` as is (past the chart): its shield soaks it first, then hp. A kill pays
+## out and may split.
+func _apply_damage(e: Enemy, dmg: float) -> void:
+	if not e.alive:
+		return
+	if e.shield > 0.0:
+		var soak: float = minf(e.shield, dmg)
+		e.shield -= soak
+		dmg -= soak
+		shield_hit.emit(e, soak)
+		if dmg <= 0.0:
+			return
 	e.hp -= dmg
 	if e.hp <= 0.0:
 		e.alive = false
+		if _is_warden(e.def):
+			_wardens -= 1
 		path_enemies[e.path].erase(e)
 		var gold: int = Economy.kill_reward(e.def, mods)
 		pending_gold += gold
@@ -960,6 +1495,7 @@ func _split(parent: Enemy) -> void:
 		child.max_hp = kind.hp * _wave.hp_scale
 		child.hp = child.max_hp
 		child.speed = kind.speed * _wave.speed_scale
+		_arrive(child)
 		_place_enemy(child)
 		_insert_sorted(path_enemies[child.path], child)
 		enemy_spawned.emit(child)
@@ -975,7 +1511,7 @@ static func _insert_sorted(enemies: Array, e: Enemy) -> void:
 func _heal(dt: float) -> void:
 	for group: Array in path_enemies:
 		for m: Enemy in group:
-			if m.def.heal_radius <= 0.0 or m.def.heal_per_second <= 0.0:
+			if m.def.heal_radius <= 0.0 or m.def.heal_per_second <= 0.0 or m.stun > 0.0:
 				continue
 			var r2: float = m.def.heal_radius * m.def.heal_radius
 			var healed: bool = false
@@ -990,11 +1526,71 @@ func _heal(dt: float) -> void:
 				mender_pulse.emit(m)
 
 
+## Wardens' auras: every enemy within a live, unfrozen, surfaced Warden's shield_radius (the
+## Warden included) is capped at that aura's strength (shield_amount × the Warden's hp scale;
+## the strongest aura counts) and refills toward it at shield_regen a second. Outside every
+## aura a shield keeps what it has but doesn't refill. O(wardens × enemies), and skipped
+## entirely while no Warden is on the field.
+func _shield(dt: float) -> void:
+	if _wardens <= 0:
+		return
+	# 10 times a second, with the elapsed time: the aura is a slow effect, and the all-pairs
+	# check cost ~0.5 ms a tick at the mixed stress load when run every tick.
+	_shield_clock += dt
+	if _shield_clock < SHIELD_PERIOD - READY_EPSILON:
+		return
+	dt = _shield_clock
+	_shield_clock = 0.0
+	for group: Array in path_enemies:
+		for e: Enemy in group:
+			e.shield_max = 0.0
+	for group: Array in path_enemies:
+		for w: Enemy in group:
+			if not _is_warden(w.def) or w.stun > 0.0 or w.burrowed():
+				continue
+			var cap: float = w.def.shield_amount * w.max_hp / maxf(0.001, w.def.hp)
+			var r2: float = w.def.shield_radius * w.def.shield_radius
+			for other_group: Array in path_enemies:
+				for o: Enemy in other_group:
+					if cap > o.shield_max and o.pos().distance_squared_to(w.pos()) <= r2:
+						if o.shield < cap:
+							o.shield = minf(cap, o.shield + w.def.shield_regen * dt)
+						o.shield_max = cap
+
+
+## Apply the damage queued during the move pass: Last Stand blasts, then gate thorns.
+func _resolve_queued() -> void:
+	if not _queued_blasts.is_empty():
+		var blasts: Array[Vector3] = _queued_blasts.duplicate()
+		_queued_blasts.clear()
+		var r: float = config.death_blast_radius
+		for b: Vector3 in blasts:
+			var at := Vector2(b.x, b.y)
+			var victims: Array[Enemy] = []
+			for group: Array in path_enemies:
+				for e: Enemy in group:
+					var reach: float = r + e.def.radius * 0.5
+					if e.hittable() and e.pos().distance_squared_to(at) <= reach * reach:
+						victims.append(e)
+			for e: Enemy in victims:
+				_damage_enemy(e, b.z, UnitDef.DamageType.EXPLOSIVE)
+	if not _queued_thorns.is_empty():
+		for i: int in _queued_thorns.size():
+			_apply_damage(_queued_thorns[i], _queued_thorn_damage[i])
+		_queued_thorns.clear()
+		_queued_thorn_damage.clear()
+
+
 ## The unit on `plot` falls: the plot empties (no refund) and anything aiming at it lets go.
+## With Last Stand (RunModifiers.death_blast) it explodes: death_blast × its level, queued.
 func destroy_unit(plot: Plot) -> void:
 	if plot.is_empty():
 		return
 	var def: UnitDef = plot.def
+	if mods.death_blast > 0.0:
+		_queued_blasts.append(Vector3(plot.position.x, plot.position.y,
+				mods.death_blast * plot.level))
+		unit_blast.emit(plot.position, config.death_blast_radius)
 	plot.def = null
 	plot.level = 0
 	plot.mastery = null
@@ -1004,4 +1600,5 @@ func destroy_unit(plot: Plot) -> void:
 	plot.cooldown = 0.0
 	plot.disabled = 0.0
 	plot.target = null
+	refresh_synergies()
 	unit_destroyed.emit(plot, def)

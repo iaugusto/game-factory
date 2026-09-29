@@ -21,8 +21,8 @@ func _init() -> void:
 	custom_minimum_size = Vector2(0, HEIGHT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bg := Panel.new()
-	var style := UiTheme.panel(Color(0.05, 0.055, 0.07, 0.92), 0, Color(0, 0, 0, 0), 0)
-	style.border_color = Color(UiTheme.ACCENT, 0.55)
+	var style := UiTheme.panel(Color(UiTheme.look.panel, 0.96), 0, Color(0, 0, 0, 0), 0)
+	style.border_color = Color(UiTheme.look.title, 0.3)
 	style.border_width_bottom = 2
 	bg.add_theme_stylebox_override("panel", style)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -46,17 +46,17 @@ func _init() -> void:
 	wall_bar.show_percentage = false
 	wall_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var fill := StyleBoxFlat.new()
-	fill.bg_color = Color("#6fd0ff")
+	fill.bg_color = UiTheme.look.gate
 	fill.set_corner_radius_all(4)
 	wall_bar.add_theme_stylebox_override("fill", fill)
 	var back := StyleBoxFlat.new()
-	back.bg_color = Color("#1a2530")
+	back.bg_color = UiTheme.look.gate.darkened(0.8)
 	back.set_corner_radius_all(4)
 	back.border_color = Color(0, 0, 0, 0.8)
 	back.set_border_width_all(1)
 	wall_bar.add_theme_stylebox_override("background", back)
 	wall_box.add_child(wall_bar)
-	wall_label = UiTheme.label("100", 12, UiTheme.TEXT_DIM, 3)
+	wall_label = UiTheme.label("100", &"caption", UiTheme.look.text_dim)
 	wall_box.add_child(wall_label)
 	var spacer_l := Control.new()
 	spacer_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -67,14 +67,14 @@ func _init() -> void:
 	mid.add_theme_constant_override("separation", -2)
 	mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(mid)
-	wave_label = UiTheme.label("WAVE 1/10", 20, UiTheme.TEXT, 5)
+	wave_label = UiTheme.label("WAVE 1/10", &"label", UiTheme.look.text)
 	wave_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mid.add_child(wave_label)
 	_boost_row = HBoxContainer.new()
 	_boost_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_boost_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_boost_row.add_child(UiTheme.icon("ui/bolt", 14))
-	boost_label = UiTheme.label("", 12, UiTheme.TEAL, 3)
+	boost_label = UiTheme.label("", &"caption", UiTheme.look.owned)
 	_boost_row.add_child(boost_label)
 	_boost_row.visible = false
 	mid.add_child(_boost_row)
@@ -85,7 +85,7 @@ func _init() -> void:
 	coin_icon = UiTheme.icon("fx/coin", 24)
 	coin_icon.pivot_offset = Vector2(12, 12)
 	row.add_child(coin_icon)
-	coin_label = UiTheme.label("0", 22, UiTheme.ACCENT, 5)
+	coin_label = UiTheme.label("0", &"label", UiTheme.look.coin)
 	coin_label.custom_minimum_size = Vector2(46, 0)
 	row.add_child(coin_label)
 

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/skill_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"supply_drop"
+title = "Supply Drop"
+description = "One free reroll of every card offer."
+branch = 2
+tier = 4
+cost = 2
+key = &"card_rerolls"
+value = 1.0

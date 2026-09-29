@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="TipDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/tip_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/tip_card.gd" id="2_c"]
+
+[sub_resource type="Resource" id="TipCard_0"]
+script = ExtResource("2_c")
+title = "Patch the gate"
+body = "Between waves, coins repair the gate here."
+icon = "ui/wall"
+focus = &"repair_gate"
+
+[resource]
+script = ExtResource("1_s")
+id = &"repair_gate"
+trigger = &"gate_damaged"
+priority = 45
+cards = Array[ExtResource("2_c")]([SubResource("TipCard_0")])

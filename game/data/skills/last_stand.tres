@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/skill_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"last_stand"
+title = "Last Stand"
+description = "A destroyed unit explodes, hitting nearby enemies (25 per unit level)."
+branch = 0
+tier = 3
+cost = 2
+key = &"death_blast"
+value = 25.0

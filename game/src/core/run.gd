@@ -10,6 +10,9 @@ extends RefCounted
 ## barricade work in BUILD *and* WAVE: coins from crates (broken by tap()) are meant to be spent
 ## while the fight is on. Moving the barricade and repairing the gate are BUILD-only. A seed replays a
 ## run exactly (state_hash()).
+##
+## The run carries one special attack (`ability`, an AbilityDef), chosen before the first wave
+## (choose_ability) and called during waves (call_ability) when its cooldown allows.
 
 signal phase_changed(phase: Phase)
 
@@ -31,9 +34,15 @@ var wall_damage_taken: float = 0.0
 var ticks: int = 0
 var cards_taken: Dictionary[StringName, int] = {}
 var card_offer: Array[CardDef] = []
+## Free rerolls left for the offer at hand (RunModifiers.card_rerolls, refilled per offer).
+var rerolls_left: int = 0
+## The special attack this run carries (null: none), and the wave seconds until it is ready
+## again (0 = ready; reset at each wave).
+var ability: AbilityDef = null
+var ability_cooldown_left: float = 0.0
 
 
-## `meta_mods`: starting modifiers from meta progress (MetaProgress.to_modifiers). Copied, so
+## `meta_mods`: starting modifiers from the skill tree (SkillTree.to_modifiers). Copied, so
 ## the run's cards never leak back into it.
 func _init(run_config: RunConfig, run_seed: int, meta_mods: RunModifiers = null) -> void:
 	config = run_config
@@ -47,6 +56,14 @@ func _init(run_config: RunConfig, run_seed: int, meta_mods: RunModifiers = null)
 		plot.unlock_wave = config.map.plot_unlock_wave(i)
 		plots.append(plot)
 	combat = CombatSim.new(config, mods, rng, plots)
+	ability = config.abilities[0] if not config.abilities.is_empty() else null
+	if mods.start_barricade >= 1.0 and config.barricade != null \
+			and not config.map.barricade_slots.is_empty():
+		var b: CombatSim.Barricade = barricade()
+		b.level = 1
+		b.max_hp = config.barricade.hp_at(1)
+		b.hp = b.max_hp
+		_place_barricade(0)
 
 
 func dt() -> float:
@@ -74,9 +91,9 @@ func wave_count() -> int:
 	return config.waves.size()
 
 
-## Bricks this run is worth, by waves cleared so far (final once is_over()).
-func bricks() -> int:
-	return Economy.bricks_for_run(waves_cleared, phase == Phase.WON, config.win_brick_bonus)
+## The gate's HP left, as a fraction of its max (stars are awarded on it).
+func gate_fraction() -> float:
+	return clampf(wall_hp() / wall_max(), 0.0, 1.0)
 
 
 ## Input: the player tapped field point `field_pos` during a wave. A crate under it takes a
@@ -92,6 +109,7 @@ func start_wave() -> bool:
 	if phase != Phase.BUILD:
 		return false
 	combat.begin_wave(config.waves[wave_index], wave_index + 1)
+	ability_cooldown_left = 0.0
 	_set_phase(Phase.WAVE)
 	return true
 
@@ -101,12 +119,15 @@ func step() -> void:
 	if phase != Phase.WAVE:
 		return
 	var delta: float = dt()
+	ability_cooldown_left = maxf(0.0, ability_cooldown_left - delta)
 	combat.step(delta)
 	ticks += 1
 	gold += combat.pending_gold
 	combat.pending_gold = 0
 	wall_damage_taken += combat.pending_wall_damage
 	combat.pending_wall_damage = 0.0
+	wall_damage_taken = maxf(0.0, wall_damage_taken - combat.pending_gate_heal)
+	combat.pending_gate_heal = 0.0
 	wall_damage_taken = maxf(0.0, wall_damage_taken - mods.wall_regen * delta)
 	if wall_hp() <= 0.0:
 		_set_phase(Phase.LOST)
@@ -117,8 +138,8 @@ func step() -> void:
 			_set_phase(Phase.WON)
 			return
 		wave_index += 1
-		card_offer = CardPool.draw(config.cards, cards_taken, config.cards_per_offer,
-				rng.stream(&"cards"))
+		_draw_offer()
+		rerolls_left = int(mods.card_rerolls)
 		_set_phase(Phase.BUILD if card_offer.is_empty() else Phase.CARD)
 
 
@@ -137,7 +158,8 @@ func upgrade_cost(plot: int) -> int:
 
 
 ## Build `unit_id` on an empty plot. Mid-wave the new unit needs config.build_setup_time
-## before its first shot, so swapping a unit is never instant.
+## before its first shot, so swapping a unit is never instant. Veteran crews
+## (RunModifiers.veteran_level) arrive levels up for the level-1 price.
 func build(plot: int, unit_id: StringName) -> bool:
 	if not can_spend() or not plot_open(plot) or not plots[plot].is_empty():
 		return false
@@ -147,13 +169,14 @@ func build(plot: int, unit_id: StringName) -> bool:
 	gold -= cost
 	var p: CombatSim.Plot = plots[plot]
 	p.def = config.unit_by_id(unit_id)
-	p.level = 1
+	p.level = mini(1 + int(mods.veteran_level), p.def.max_level())
 	p.mastery = null
 	p.spent = cost
-	p.max_hp = p.def.hp_at(1)
+	p.max_hp = unit_max_hp(p.def, p.level)
 	p.hp = p.max_hp
 	p.disabled = 0.0
 	p.cooldown = config.build_setup_time if phase == Phase.WAVE else 0.0
+	combat.refresh_synergies()
 	return true
 
 
@@ -167,10 +190,15 @@ func upgrade(plot: int) -> bool:
 	var p: CombatSim.Plot = plots[plot]
 	p.level += 1
 	p.spent += cost
-	var new_max: float = p.def.hp_at(p.level)
+	var new_max: float = unit_max_hp(p.def, p.level)
 	p.hp += new_max - p.max_hp  # an upgrade keeps the damage taken
 	p.max_hp = new_max
 	return true
+
+
+## A unit's max HP at `level`, with the run's HP bonus.
+func unit_max_hp(def: UnitDef, level: int) -> float:
+	return def.hp_at(level) * (1.0 + mods.unit_hp_bonus)
 
 
 ## Coins to repair the unit on `plot` to full, or -1 if there is nothing to repair.
@@ -242,6 +270,7 @@ func sell(plot: int) -> int:
 	p.cooldown = 0.0
 	p.disabled = 0.0
 	p.target = null
+	combat.refresh_synergies()
 	return refund
 
 
@@ -253,7 +282,8 @@ func mastery_cost(plot: int) -> int:
 	var p: CombatSim.Plot = plots[plot]
 	if p.level < p.def.max_level() or p.mastery != null or p.def.masteries.is_empty():
 		return -1
-	return Economy.discounted(p.def.mastery_cost, mods)
+	var price: int = ceili(p.def.mastery_cost * (1.0 - clampf(mods.mastery_discount, 0.0, 0.9)))
+	return Economy.discounted(price, mods)
 
 
 ## Buy mastery `index` (of the unit's UnitDef.masteries) for the maxed unit on `plot`.
@@ -271,7 +301,7 @@ func buy_mastery(plot: int, index: int) -> bool:
 
 # --- the gate and the barricade ------------------------------------------------------------
 
-## Patch the gate between waves: config.gate_repair_hp for config.gate_repair_cost.
+## Patch the gate between waves: gate_repair_amount() HP for config.gate_repair_cost.
 func can_repair_gate() -> bool:
 	return phase == Phase.BUILD and wall_damage_taken > 0.0 and gold >= config.gate_repair_cost
 
@@ -280,8 +310,13 @@ func repair_gate() -> bool:
 	if not can_repair_gate():
 		return false
 	gold -= config.gate_repair_cost
-	wall_damage_taken = maxf(0.0, wall_damage_taken - config.gate_repair_hp)
+	wall_damage_taken = maxf(0.0, wall_damage_taken - gate_repair_amount())
 	return true
+
+
+## HP one gate repair restores (config.gate_repair_hp, raised by the tree's Masons).
+func gate_repair_amount() -> float:
+	return config.gate_repair_hp * (1.0 + mods.gate_repair_bonus)
 
 
 ## The one barricade (its state lives in the sim, which reads it every tick).
@@ -372,6 +407,61 @@ func pick_card(index: int) -> bool:
 	return true
 
 
+## Swap the offer at hand for a fresh draw of other cards, using a free reroll
+## (RunModifiers.card_rerolls). If too few other cards are left, the rest are drawn as usual.
+func reroll_cards() -> bool:
+	if phase != Phase.CARD or rerolls_left <= 0:
+		return false
+	rerolls_left -= 1
+	var shown: Array[CardDef] = card_offer.duplicate()
+	_draw_offer(shown)
+	return true
+
+
+## Draw the card offer, never repeating a card in `exclude` unless there aren't enough others.
+func _draw_offer(exclude: Array[CardDef] = []) -> void:
+	var count: int = config.cards_per_offer + int(mods.extra_cards)
+	var taken: Dictionary[StringName, int] = cards_taken.duplicate()
+	for c: CardDef in exclude:
+		taken[c.id] = c.max_stacks
+	card_offer = CardPool.draw(config.cards, taken, count, rng.stream(&"cards"))
+	if card_offer.size() < count and not exclude.is_empty():
+		for c: CardDef in CardPool.draw(config.cards, cards_taken, count, rng.stream(&"cards")):
+			if card_offer.size() < count and not card_offer.has(c):
+				card_offer.append(c)
+
+
+# --- the special attack ------------------------------------------------------------------
+
+## Take `def` into this run instead (the pick when a map starts): only before the first wave.
+func choose_ability(def: AbilityDef) -> bool:
+	if def == null or phase != Phase.BUILD or wave_index != 0 or ticks != 0:
+		return false
+	ability = def
+	return true
+
+
+## The ability's full cooldown, after the run's modifiers (0 with none).
+func ability_cooldown() -> float:
+	if ability == null:
+		return 0.0
+	return ability.cooldown * maxf(0.1, 1.0 - mods.ability_cooldown_bonus)
+
+
+func ability_ready() -> bool:
+	return ability != null and phase == Phase.WAVE and ability_cooldown_left <= 0.0
+
+
+## Call the ability at `field_pos` (ignored by untargeted ones): its damage scales with the
+## wave's hp_scale, and it lands after its delay. False if it isn't ready.
+func call_ability(field_pos: Vector2) -> bool:
+	if not ability_ready():
+		return false
+	combat.cast(ability, field_pos, config.waves[wave_index].hp_scale)
+	ability_cooldown_left = ability_cooldown()
+	return true
+
+
 # --- internals --------------------------------------------------------------------------
 
 func _set_phase(p: Phase) -> void:
@@ -386,6 +476,8 @@ func state_hash() -> String:
 		"t%d p%d w%d c%d g%d wall%.4f" % [ticks, phase, wave_index, waves_cleared, gold,
 				wall_damage_taken],
 		"boost %.4f" % combat.boost_time,
+		"ability %s %.4f %d %d %d" % [ability.id if ability else &"-", ability_cooldown_left,
+				combat.casts.size(), combat.hazards.size(), combat.mines.size()],
 		"barricade %d %d %.4f" % [combat.barricade.slot, combat.barricade.level,
 				combat.barricade.hp],
 		"kills %d crates %d shots %d" % [combat.kills, combat.crates_broken,
@@ -401,8 +493,8 @@ func state_hash() -> String:
 		parts.append("card %s %d" % [id, cards_taken[id]])
 	for group: Array in combat.path_enemies:
 		for e: CombatSim.Enemy in group:
-			parts.append("e%d %d %.4f %.4f %.4f %.4f %s" % [e.id, e.path, e.d, e.hp, e.strike_timer,
-					e.spit_timer, e.elite.id if e.elite else &"-"])
+			parts.append("e%d %d %.4f %.4f %.4f %.4f %.4f %s" % [e.id, e.path, e.d, e.hp,
+					e.strike_timer, e.spit_timer, e.stun, e.elite.id if e.elite else &"-"])
 	for sp: CombatSim.Spit in combat.spits:
 		parts.append("s%d %.4f %.4f" % [sp.id, sp.pos.x, sp.pos.y])
 	for group: Array in combat.path_crates:

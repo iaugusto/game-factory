@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/skill_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"engineers"
+title = "Engineers"
+description = "Units cost 10% less."
+branch = 2
+tier = 3
+cost = 2
+key = &"unit_cost_discount"
+value = 0.1

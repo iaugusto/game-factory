@@ -3,7 +3,7 @@
 Work is grouped into **bundles**. Each bundle is sized to be taken from start to verified finish
 in **one session by a strong model** (e.g. Fable 5.1), without the user in the loop mid-way.
 
-_Last updated: 2026-09-26. Concept: "Hold the Gate" (see `README.md`). Current work: the
+_Last updated: 2026-09-27. Concept: "Hold the Gate" (see `README.md`). Current work: the
 **escalating-difficulty track (E1–E5)** below. It runs ahead of B3/B4, and B4 is re-scoped by
 it._
 
@@ -27,8 +27,11 @@ it._
 > | E3 | Counters and coin sinks: the damage chart + armour, sell (50%), masteries, the barricade, gate repair, wave preview + intel cards, escorts, waves from patterns, a counter-picking bot | ✅ 2026-09-26 (`docs/2026-09-26-counters-and-coin-sinks/`) · 👤 play it |
 > | E4 | Maps from paths: polylines that bend and merge, portals opening mid-run, pads that unlock, terrain (mud, high ground), maps as levels, Canyon Pass | ✅ 2026-09-26 (`docs/2026-09-26-maps-from-paths/`) · 👤 play the Canyon |
 > | E5a | New enemies (the Ravager destroys units, the Splitter, the Mender), destroyable units + repair, elites (Armoured, Swift, Regenerating) | ✅ 2026-09-27 (`docs/2026-09-26-new-enemies-and-destroyable-units/`) · 👤 play |
-> | E5b | Sectors: a campaign of maps with a **skill tree between maps** (the user's ideas: "a fallen unit explodes", "+10% loot", …) and the save/meta wiring (B3) | — |
-> | E5c | The active ability (an artillery strike) and unit synergies | — |
+> | E5b | Sectors: a campaign of 3 maps (Switchback Ridge added) with stars, a **skill tree between maps** (the user's "a fallen unit explodes", "+10% loot", and 13 more nodes), the save/meta wiring (B3), the curve re-tuned against tree profiles | ✅ 2026-09-27 (`docs/2026-09-27-sectors-and-skill-tree/`) · 👤 play the campaign |
+> | E6 | Visual style (fonts, palette, type scale as data; the user picked the hybrid direction) + contextual tips that stop time and teach each new thing (pulls parts of B6 and B8 forward) | ✅ 2026-09-27 (`docs/2026-09-27-style-and-tutorials/`) · 👤 play a fresh campaign |
+> | E5c | The active ability (an artillery strike) and unit synergies (+ their tips) | ✅ 2026-09-27 (`docs/2026-09-27-artillery-and-synergies/`) · 👤 feel the strike, judge the links |
+> | E7 | Art readability and resolution: 4× sprites, readable enemies, damage-type colours, bigger crates and barricade, biome grounds | ✅ 2026-09-27 (`docs/2026-09-27-art-readability/`) · 👤 play it |
+> | E8 | Content expansion to ship 6 sectors, in 4 stages: (1) special attacks as data, picked at map start with clip tutorials; (2) Wasp, Warden, Burrower, Bombardier; (3) bosses as data (a 50-damage Queen, Broodmother, Siege Titan, Overmind); (4) Mire Crossing, Ashfall, The Hive + an 18-star tree | Stage 1 ✅ 2026-09-27 (napalm on the road 2026-09-28) · Stage 2 ✅ 2026-09-28 (`docs/2026-09-27-content-expansion/`) · 👤 judge the attacks and the four enemies · Stages 3–4 — |
 > | — | Open from E3: make Skitters and Spitters demand their counters (the bot gets by with Snipers and Mortars) | 👤 tune by hand |
 > | — | Open from E4/E5a: the sim tick is up to 1.7–1.95 ms in game under stress (it was about 0.65 at E2); measure on the phone (B5) before more per-enemy rules | B5 |
 
@@ -95,10 +98,13 @@ should attempt.
 | E3 | Counters and coin sinks | Prototype | XL | E2 | ✅ 2026-09-26 · 👤 play it |
 | E4 | Maps from paths + Canyon Pass | Prototype | XL | E3 | ✅ 2026-09-26 · 👤 play it |
 | E5a | New enemies (Ravager, Splitter, Mender), destroyable units, elites | Prototype | XL | E4 | ✅ 2026-09-27 · 👤 play waves 5–10 |
-| E5b | Sectors (campaign of maps) + save/meta wiring (B3) + skill tree | Prototype | XL | E5a | — |
-| E5c | Active ability (e.g. an artillery strike) + unit synergies | Prototype | L | E5a | — |
-| B3 | Run loop: meta, save (build/cards done in the pivot) | Prototype | M | pivot | — |
-| B4 | Balance bot, tuning & juice | Prototype | L | B3 | — |
+| E5b | Sectors (campaign of maps) + save/meta wiring (B3) + skill tree | Prototype | XL | E5a | ✅ 2026-09-27 · 👤 play the campaign |
+| E6 | Visual style + contextual tips (parts of B6/B8) | Prototype | L | E5b | ✅ 2026-09-27 · 👤 play a fresh campaign |
+| E5c | Active ability (e.g. an artillery strike) + unit synergies | Prototype | L | E5a | ✅ 2026-09-27 · 👤 feel the strike |
+| B3 | Run loop: meta, save (build/cards done in the pivot) | Prototype | M | pivot | ✅ 2026-09-27 in E5b |
+| B4 | Balance bot, tuning & juice | Prototype | L | B3 | ✅ 2026-09-27 · 👤 play; judge Switchback + the Queen |
+| E7 | Art readability & resolution | Prototype | L | B4 | ✅ 2026-09-27 · 👤 play it |
+| E8 | Content expansion: 6 sectors, 4 enemies, bosses, special attacks (4 stages) | Prototype | XL | E7 | Stages 1–2 ✅ 2026-09-28 · Stages 3–4 — |
 | B5 | Android build & performance | Prototype | M | B4 | — |
 | **D1** | **Decision: continue, pivot or stop** | Gate | — | B5 | — |
 | B6 | Art direction options | Vertical slice | L | D1 | — |
@@ -176,6 +182,11 @@ Its 10 days are regrouped into bundles; day numbers are given for reference.
 
 ### B3 — Run loop: meta, save · M · plan days 6–8 (UI)
 
+- **✅ Done 2026-09-27 inside E5b** (`docs/2026-09-27-sectors-and-skill-tree/`). The brick meta
+  became the campaign's stars and skill tree (user's call). Save v5 is wired through the
+  `Session` autoload, and the loop "run → tree → better run" is tested end to end
+  (`campaign_flow_test`).
+
 - **Already done by the pivot:** plots and 6 unit types in play, the build menu, the card
   picker, the squad upgrades panel, and the result screen.
 - **Includes:** the meta screen (bricks → the 6 meta upgrades), save/load wired to the UI
@@ -186,6 +197,14 @@ Its 10 days are regrouped into bundles; day numbers are given for reference.
 - **👤 Checkpoint:** a short clip of two different runs.
 
 ### B4 — Balance bot, tuning & juice · L · plan day 9
+
+- **✅ Done 2026-09-27.** See `docs/2026-09-27-b4-balance-and-juice/`.
+  - `uv run balance` writes the report.
+  - Smart-bot win rates are 38 / 38 / 46% across the three sectors, and the casual bot's
+    are 48 / 34 / 42%.
+  - Fixed "wrong" builds lose.
+  - Big guns still dominate Switchback (an open design call).
+  - Juice pass: press squash, star pop-in, count-ups, falling shell, upgrade pop.
 
 > **2026-09-26:** the squad is gone (E1). Items 1, 4 and 6 below are moot, as is the
 > "squad-first" strategy. Items 2, 3, 5 and 7 continue in E3 (enemy mixes and volume).
@@ -268,6 +287,9 @@ The user scores the plan §7 criteria. The outcome is one of:
 
 ### B6 — Art direction options · L
 
+- **UI style chosen (E6, 2026-09-27).** Three UI directions (fonts, palette, shape) were
+  compared in the game. The user picked "hybrid" (`data/styles/hybrid.tres`). Style is data,
+  so later directions only need a new `.tres`.
 - **Partly done early (2026-09-25 pivot).**
   - **Built:** one full direction, "frontier outpost vs alien swarm". It is procedural SVG
     from `tools/gf_tools/art`, covering every enemy, unit, crate, the field and the effects.
@@ -306,6 +328,10 @@ The user scores the plan §7 criteria. The outcome is one of:
 
 ### B8 — First 3 minutes (onboarding) · L
 
+- **Partly done early (E6, 2026-09-27).** The user chose time-stopped tip cards over
+  "no text". The tip system and 18 tips exist (`docs/2026-09-27-style-and-tutorials/`).
+  - **What's left here:** pacing the first 3 waves, the first meta unlock within the first
+    session, and a title screen.
 - **Includes:** teaching through play (the first wave teaches gates with no text), pacing of the
   first 3 waves, the first meta unlock arriving within the first session, and a title screen in
   the chosen art direction.

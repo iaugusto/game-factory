@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 48 48">
+<defs><radialGradient id="rg1" gradientUnits="objectBoundingBox" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#2fae5c" stop-opacity="0.55"/><stop offset="0.7" stop-color="#15181d" stop-opacity="1"/><stop offset="1" stop-color="#0d0f12" stop-opacity="1"/></radialGradient><linearGradient id="lg2" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8d9aa6" stop-opacity="1"/><stop offset="1" stop-color="#2c343c" stop-opacity="1"/></linearGradient></defs>
+<circle cx="24" cy="24" r="22.5" fill="url(#rg1)" stroke="#58e08a" stroke-width="3"/>
+<ellipse cx="12" cy="13" rx="8" ry="2.4" fill="#dfe8ee" opacity="0.7" stroke="#0c1116" stroke-width="0.7"/>
+<line x1="12" y1="13" x2="18" y2="19" stroke="#2c343c" stroke-width="2"/>
+<ellipse cx="36" cy="13" rx="8" ry="2.4" fill="#dfe8ee" opacity="0.7" stroke="#0c1116" stroke-width="0.7"/>
+<line x1="36" y1="13" x2="30" y2="19" stroke="#2c343c" stroke-width="2"/>
+<rect x="16" y="16" width="16" height="9" rx="3" fill="url(#lg2)" stroke="#0c1116" stroke-width="1.1"/>
+<circle cx="24" cy="20.5" r="2" fill="#7dffb0"/>
+<path d="M21,27 L27,27 L27,31 L31,31 L31,37 L27,37 L27,41 L21,41 L21,37 L17,37 L17,31 L21,31 Z" fill="#58e08a" stroke="#0e3a1e" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 48 48">
+<defs><radialGradient id="rg1" gradientUnits="objectBoundingBox" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#e8742e" stop-opacity="0.55"/><stop offset="0.7" stop-color="#15181d" stop-opacity="1"/><stop offset="1" stop-color="#0d0f12" stop-opacity="1"/></radialGradient><linearGradient id="lg2" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#86985a" stop-opacity="1"/><stop offset="1" stop-color="#39432a" stop-opacity="1"/></linearGradient></defs>
+<circle cx="24" cy="24" r="22.5" fill="url(#rg1)" stroke="#e8742e" stroke-width="3"/>
+<path d="M35,31 L28.96,33.39 L30.86,39.6 L25.22,36.36 L21.55,41.72 L20.57,35.3 L14.09,35.77 L18.5,31 L14.09,26.23 L20.57,26.7 L21.55,20.28 L25.22,25.64 L30.86,22.4 L28.96,28.61 Z" fill="#ffb347" stroke="#5a2308" stroke-width="1"/>
+<circle cx="24" cy="31" r="3.6" fill="#fff4d0"/>
+<g transform="rotate(20 24 18)"><path d="M24,6 Q29,11 28,19 L28,24 L20,24 L20,19 Q19,11 24,6 Z" fill="url(#lg2)" stroke="#120c10" stroke-width="1.2"/><path d="M20.5,11 L27.5,11" stroke="#e8b030" stroke-width="1.8"/></g>
+</svg>

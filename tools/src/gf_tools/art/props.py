@@ -8,18 +8,20 @@ import random
 from math import pi, sin
 
 from . import palette as P
-from .svg import Svg, ellipse_points, polar, smooth_path
+from .svg import FIELD_RASTER, Svg, ellipse_points, polar, smooth_path
 
 FIELD_W = 540.0
 FIELD_H = 860.0
-def _rock(s: Svg, rng: random.Random, x: float, y: float, r: float) -> None:
+def _rock(s: Svg, rng: random.Random, x: float, y: float, r: float,
+          colors: tuple[str, str, str, str] = (P.ROCK_LIGHT, P.ROCK, "#2a2724", "#8a8378")) -> None:
+    """A lit rock; `colors` is (light, mid, dark, rim highlight), so each biome has its stone."""
     jit = [rng.uniform(-0.18, 0.18) for _ in range(9)]
     pts = ellipse_points(x, y, r, r * rng.uniform(0.65, 0.9), 9, jit, rng.uniform(0, pi))
     s.soft_shadow(x + r * 0.35, y + r * 0.45, r * 1.25, r * 0.9, 0.55)
-    fill = s.radial([(0, P.ROCK_LIGHT, 1), (0.55, P.ROCK, 1), (1, "#2a2724", 1)], cx=0.35, cy=0.3)
+    fill = s.radial([(0, colors[0], 1), (0.55, colors[1], 1), (1, colors[2], 1)], cx=0.35, cy=0.3)
     s.outlined(smooth_path(pts, tension=0.35), fill, "#141210", 0.7)
     s.path(smooth_path(pts[5:9] + pts[0:1], closed=False, tension=0.35), fill="none",
-           stroke="#8a8378", stroke_width=0.7, opacity=0.5)
+           stroke=colors[3], stroke_width=0.7, opacity=0.5)
 
 
 def _tuft(s: Svg, rng: random.Random, x: float, y: float, color: str) -> None:
@@ -52,7 +54,7 @@ def _crystal(s: Svg, rng: random.Random, x: float, y: float, size: float) -> Non
 def wall() -> Svg:
     """The defensive line (540 wide). Its top edge is drawn 16 units above RunConfig.wall_y:
     a concrete-and-steel parapet, a hazard band, then the walkway the wall's build spots sit on."""
-    s = Svg(FIELD_W, 112)
+    s = Svg(FIELD_W, 112, FIELD_RASTER)
     rng = random.Random(3)
     s.rect(0, 20, FIELD_W, 92, fill=s.linear([(0, "#2a2e33", 1), (1, "#15181b", 1)]))
     for y in range(34, 112, 7):  # walkway grating
@@ -178,54 +180,93 @@ def _bag(s: Svg, x: float, y: float, w: float = 13.0, h: float = 7.0, tint: str 
            opacity=0.7)
 
 
-def barricade(level: int) -> Svg:
-    """The barricade across a lane, one per level: 1 is a sandbag line, 2 adds a timber-and-steel
-    frame, 3 is a steel wall with spikes. 120 wide (the lane is 180), 40 deep."""
-    s = Svg(120, 40)
-    s.soft_shadow(62, 24, 58, 13, 0.5)
-    if level >= 2:  # timber frame and steel plates behind the bags
-        s.rect(6, 6, 108, 12, rx=2, fill=s.linear([(0, P.WOOD_LIGHT, 1), (1, P.WOOD_DARK, 1)]),
-               stroke=P.INK, stroke_width=1.2)
-        for x in range(12, 112, 16):
-            s.rect(x, 5, 8, 14, rx=1, fill=s.linear([(0, P.STEEL_LIGHT, 1), (1, P.STEEL_DARK, 1)]),
-                   stroke=P.STEEL_INK, stroke_width=0.7)
-            s.circle(x + 4, 9, 0.9, fill=P.STEEL_DARK)
-            s.circle(x + 4, 15, 0.9, fill=P.STEEL_DARK)
-    if level >= 3:  # spikes toward the enemy (up the lane)
-        for x in range(10, 114, 12):
-            s.outlined(f"M{x - 3},{7} L{x},{-0.5 + 1} L{x + 3},{7} Z", P.STEEL_LIGHT, P.STEEL_INK, 0.7)
-    rows = [(16, 12.5), (24, 13.5)] if level == 1 else [(22, 12.5), (30, 13.5)]
-    for k, (y, w) in enumerate(rows):
-        off = 0 if k % 2 == 0 else w / 2
-        x = 8 + off
-        while x < 114:
-            _bag(s, x, y, w, 7.2)
+# The barricade's footprint (art units): it spans most of a lane (lanes are 180 apart, enemies
+# spread ±30 around the centre line) and is deep enough to read as a wall of bags on a phone.
+BARRICADE_W = 144.0
+BARRICADE_H = 52.0
+# Crates are drawn at this multiple of their authored size (the user judged them too small);
+# CrateDef.radius in game/data/crates matches the grown bodies, so taps land where they look.
+CRATE_ZOOM = 1.35
+
+
+def _bag_rows(level: int) -> list[float]:
+    """The y of each sandbag row: three staggered rows, pushed back when a frame stands in
+    front (levels 2 and 3)."""
+    return [16.0, 26.0, 36.0] if level == 1 else [27.0, 36.0, 45.0]
+
+
+def _bag_layout(level: int) -> list[tuple[float, float, float]]:
+    """Every bag as (x, y, width), rows staggered like brickwork."""
+    out = []
+    for k, y in enumerate(_bag_rows(level)):
+        w = 17.0 if k % 2 == 0 else 18.0
+        x = 6 + w / 2 + (0 if k % 2 == 0 else w / 2)
+        while x + w / 2 <= BARRICADE_W - 4:
+            out.append((x, y, w))
             x += w
-    s.rect(4, 28 if level > 1 else 20, 112, 3, fill=P.HAZARD, opacity=0.55)
+    return out
+
+
+def barricade(level: int) -> Svg:
+    """The barricade across a lane, one per level: 1 is three rows of sandbags, 2 adds a
+    timber-and-steel frame in front, 3 adds spikes toward the enemy. Enemies come from the top."""
+    s = Svg(BARRICADE_W, BARRICADE_H)
+    rows = _bag_rows(level)
+    s.soft_shadow(BARRICADE_W / 2 + 3, (rows[0] + rows[-1]) / 2 + 4, BARRICADE_W / 2 + 2,
+                  (rows[-1] - rows[0]) / 2 + 12, 0.55)
+    if level >= 2:  # timber frame and steel plates in front of the bags
+        s.rect(5, 8, BARRICADE_W - 10, 14, rx=2,
+               fill=s.linear([(0, P.WOOD_LIGHT, 1), (1, P.WOOD_DARK, 1)]), stroke=P.INK,
+               stroke_width=1.3)
+        for x in range(10, int(BARRICADE_W) - 12, 16):
+            s.rect(x, 7, 9, 16, rx=1, fill=s.linear([(0, P.STEEL_LIGHT, 1), (1, P.STEEL_DARK, 1)]),
+                   stroke=P.STEEL_INK, stroke_width=0.8)
+            s.circle(x + 4.5, 11, 1.0, fill=P.STEEL_DARK)
+            s.circle(x + 4.5, 19, 1.0, fill=P.STEEL_DARK)
+    if level >= 3:  # spikes toward the enemy (up the lane)
+        for x in range(10, int(BARRICADE_W) - 6, 11):
+            s.outlined(f"M{x - 3.2},{9} L{x},{1} L{x + 3.2},{9} Z", P.STEEL_LIGHT, P.STEEL_INK, 0.8)
+    bags = _bag_layout(level)
+    for x, y, w in bags:
+        _bag(s, x, y, w, 9.5)
+    back = [(x, w) for x, y, w in bags if y == rows[-1]]  # a hazard stripe along the back row
+    x0, x1 = back[0][0] - back[0][1] / 2, back[-1][0] + back[-1][1] / 2
+    s.rect(x0 + 2, rows[-1] + 5.2, x1 - x0 - 4, 2.4, fill=P.HAZARD, opacity=0.6)
+    return s
+
+
+def barricade_slot() -> Svg:
+    """Where a barricade can stand: the level-1 barricade's bags as a white ghost, so the game
+    tints it (amber: open, teal: selected) and the marker has the barricade's shape."""
+    s = Svg(BARRICADE_W, BARRICADE_H)
+    for x, y, w in _bag_layout(1):
+        s.rect(x - w / 2 + 0.6, y - 4.2, w - 1.2, 8.4, rx=3.8, fill="#ffffff", opacity=0.35,
+               stroke="#ffffff", stroke_width=1.3)
     return s
 
 
 def barricade_rubble() -> Svg:
     """A broken barricade: split bags and scattered timber (it can be repaired)."""
-    s = Svg(120, 40)
-    s.soft_shadow(62, 24, 56, 11, 0.35)
+    s = Svg(BARRICADE_W, BARRICADE_H)
+    s.soft_shadow(BARRICADE_W / 2 + 2, 30, BARRICADE_W / 2 - 4, 15, 0.35)
     rng = random.Random(11)
-    for i in range(14):
-        x = 10 + i * 7.5 + rng.uniform(-3, 3)
-        y = 22 + rng.uniform(-7, 7)
-        _bag(s, x, y, rng.uniform(7, 11), rng.uniform(4, 6), P.SAND_DARK)
-    for i in range(4):
-        x = 15 + i * 26 + rng.uniform(-4, 4)
-        s.rect(x, 12 + rng.uniform(-3, 6), 18, 4, rx=1, fill=P.WOOD_DARK, stroke=P.INK, stroke_width=0.6,
-               transform=f"rotate({rng.uniform(-35, 35):.1f} {x + 9} 16)")
+    for i in range(18):
+        x = 12 + i * 7.2 + rng.uniform(-3, 3)
+        y = 28 + rng.uniform(-10, 10)
+        _bag(s, x, y, rng.uniform(9, 13), rng.uniform(5, 7), P.SAND_DARK)
+    for i in range(5):
+        x = 14 + i * 26 + rng.uniform(-4, 4)
+        s.rect(x, 18 + rng.uniform(-4, 8), 20, 4.5, rx=1, fill=P.WOOD_DARK, stroke=P.INK,
+               stroke_width=0.6, transform=f"rotate({rng.uniform(-35, 35):.1f} {x + 10} 22)")
     return s
 
 
 ASSETS = {
     "field/wall": wall,
-    "crates/supply": crate_supply,
-    "crates/cache": crate_cache,
-    "crates/overdrive": crate_overdrive,
+    "crates/supply": lambda: crate_supply().zoomed(CRATE_ZOOM),
+    "crates/cache": lambda: crate_cache().zoomed(CRATE_ZOOM),
+    "crates/overdrive": lambda: crate_overdrive().zoomed(CRATE_ZOOM),
+    "props/barricade_slot": barricade_slot,
     "props/barricade_1": lambda: barricade(1),
     "props/barricade_2": lambda: barricade(2),
     "props/barricade_3": lambda: barricade(3),

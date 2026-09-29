@@ -26,6 +26,16 @@ var repair_gate_below: float = 0.7
 var max_units: int = 99
 ## Which card of the offer to take.
 var card_choice: int = 0
+## Place a new unit where it forms the most unit links (Synergies.preview), nearest
+## plot_focus on a tie. Off: nearest plot_focus only.
+var synergy_pick: bool = true
+## Call the special attack on a cluster of at least this much threat, or on a sieger
+## (ability_target has the rule per kind).
+var ability_threat: float = 5.0
+## How often (ticks) to look for an ability target; 0 never calls it.
+var ability_every_ticks: int = 12
+## Repair Drones: called when the gate is below this fraction, or a unit below half of it.
+var repair_below: float = 0.6
 ## During a wave, try to spend every this many ticks.
 var build_every_ticks: int = 30
 ## Plots are filled nearest this point first (the middle of the field).
@@ -65,6 +75,8 @@ func play_build(run: Run) -> void:
 		var empty: int = _plot_for_threat(run)
 		if built < max_units and empty >= 0:
 			var id: StringName = _choose_unit(run, built)
+			if synergy_pick and not _under_siege(run):
+				empty = _linking_plot(run, id, empty)
 			if run.build(empty, id):
 				continue
 			return  # save up for the next unit
@@ -72,25 +84,35 @@ func play_build(run: Run) -> void:
 			return
 
 
-## The unit to build next, or build_order when counter_pick is off. It fills the biggest gap:
-## the enemy type in the wave at hand that the units already built counter worst (their kills
-## per second against it, relative to its count × threat), then the most cost-effective unit
-## against that type. It saves for that unit unless enemies are already at
-## the gate; then it takes the best one it can afford now.
+## The unit to build next, or build_order when counter_pick is off. Counter-picking reads the
+## coming two waves like a player reading the preview: the biggest gap is the enemy type with
+## the most need (count × gate damage) for the least coverage (kills per second by the units
+## built), and it takes the unit that kills that type fastest per √cost. It saves for that
+## unit unless enemies are already at the gate; then it takes the best one it can afford now.
 func _choose_unit(run: Run, built: int) -> StringName:
 	if not counter_pick:
 		return build_order[built % build_order.size()]
-	var wave: WaveDef = run.config.waves[mini(run.wave_index, run.wave_count() - 1)]
-	var counts: Dictionary = WaveSchedule.enemy_counts(wave)
+	# The wave at hand and the next one (units stay for the rest of the run), at the tougher
+	# of their HP scales.
+	var counts: Dictionary = {}
+	var hp_scale: float = 1.0
+	for k: int in 2:
+		var w: WaveDef = run.config.waves[mini(run.wave_index + k, run.wave_count() - 1)]
+		hp_scale = maxf(hp_scale, w.hp_scale)
+		var c: Dictionary = WaveSchedule.enemy_counts(w)
+		for e: EnemyDef in c:
+			counts[e] = maxi(int(counts.get(e, 0)), int(c[e]))
 	var gap: EnemyDef = null
 	var gap_score: float = -1.0
 	for e: EnemyDef in counts:
-		# Coverage as kills per second (damage per second over its HP), so types compare.
+		# Coverage: kills per second by the units already built (overkill counted).
 		var cover: float = 0.0
 		for plot: CombatSim.Plot in run.plots:
 			if not plot.is_empty():
-				cover += _dps_against(run, plot.def, e, plot.level) / maxf(1.0, e.hp)
-		var need: float = counts[e] * e.threat
+				cover += _kill_rate(run, plot.def, e, plot.level, hp_scale)
+		# Need = what the type can do to the gate (count × damage per strike), not `threat`
+		# (an abstract rating that undervalues swarms of small hitters).
+		var need: float = counts[e] * e.wall_damage
 		var score: float = need / (1.0 + 4.0 * cover)
 		if score > gap_score:
 			gap_score = score
@@ -106,23 +128,35 @@ func _choose_unit(run: Run, built: int) -> StringName:
 	var best: StringName = build_order[0]
 	var best_score: float = -1.0
 	for u: UnitDef in pool:
-		var score: float = _dps_against(run, u, gap, 1) / run.unit_cost(u.id)
+		# Per coin, but softened: pads are scarce and coins are not, so a stronger unit per pad
+		# is worth more than its price alone says.
+		var score: float = _kill_rate(run, u, gap, 1, hp_scale) / sqrt(float(run.unit_cost(u.id)))
 		if score > best_score:
 			best_score = score
 			best = u.id
 	return best
 
 
-## A unit's damage per second against `e` at `level` through the chart, with splash counted as
-## hitting ~2 more of a pack and a beam ~0.3 more.
-func _dps_against(run: Run, u: UnitDef, e: EnemyDef, level: int) -> float:
+## Kills per second of unit `u` at `level` against `e` at wave HP scale `hp_scale`: shots per
+## second × targets per shot ÷ hits needed per kill. Unlike raw DPS it counts overkill (a
+## sniper round on a Skitter is one kill per shot, however big), and splash is a single target
+## against fast enemies (shells land where the target was, and they're gone). Stage 2 rules:
+## shells never reach a flyer, a Warden's shield counts as extra HP, and a Burrower is only
+## hittable for the share of its walk it spends on the surface.
+func _kill_rate(run: Run, u: UnitDef, e: EnemyDef, level: int, hp_scale: float) -> float:
+	if e.flying and u.attack == UnitDef.Attack.SHELL:
+		return 0.0
 	var hit: float = CombatSim.effective_damage(run.config, e, u.damage_at(level), u.damage_type)
-	var pack: float = 1.0
+	var hits: float = ceilf((e.hp + e.shield_amount) * hp_scale / maxf(0.01, hit))
+	var targets: float = 1.0
 	if u.splash_radius > 0.0:
-		pack = 3.0
+		targets = 1.0 if e.speed > 80.0 else 3.0
 	elif u.attack == UnitDef.Attack.BEAM:
-		pack = 1.3  # a lined-up pair now and then; a lone armoured target usually
-	return hit / u.reload_at(level) * pack
+		targets = 1.3
+	var up: float = 1.0
+	if e.burrow_every > 0.0 and e.burrow_length > 0.0:
+		up = e.burrow_every / (e.burrow_every + e.burrow_length / maxf(1.0, e.speed))
+	return up * targets / (u.reload_at(level) * maxf(1.0, hits))
 
 
 ## Between waves, keep the barricade where it blocks the most threat of the coming wave.
@@ -208,6 +242,125 @@ func _plot_for_threat(run: Run) -> int:
 	return best
 
 
+## The open empty plot where `unit_id` forms the most distinct links; `fallback` (the nearest
+## to plot_focus) when none would link better.
+func _linking_plot(run: Run, unit_id: StringName, fallback: int) -> int:
+	var best: int = fallback
+	var best_links: int = Synergies.preview(run.plots, run.config, fallback, unit_id).size() \
+			if fallback >= 0 else -1
+	var best_d: float = run.plots[fallback].position.distance_squared_to(plot_focus) \
+			if fallback >= 0 else INF
+	for plot: CombatSim.Plot in run.plots:
+		if not plot.is_empty() or not run.plot_open(plot.index):
+			continue
+		var n: int = Synergies.preview(run.plots, run.config, plot.index, unit_id).size()
+		var d: float = plot.position.distance_squared_to(plot_focus)
+		if n > best_links or (n == best_links and d < best_d):
+			best = plot.index
+			best_links = n
+			best_d = d
+	return best
+
+
+## The balance strategies (docs/2026-09-27-b4-balance-and-juice/research.md §3), by name.
+const PRESETS: PackedStringArray = ["smart", "casual", "no_ability", "no_links", "cycle",
+		"heavy", "light", "mixed", "no_loot"]
+
+
+## A bot configured as strategy `name` (PRESETS); null for an unknown name.
+static func preset(name: String) -> Autoplay:
+	var bot := Autoplay.new()
+	match name:
+		"smart":
+			pass
+		"casual":
+			bot.taps_per_second = 1.5
+			bot.ability_every_ticks = 90
+			bot.ability_threat = 10.0
+			bot.synergy_pick = false
+			bot.repair_gate_below = 0.5
+		"no_ability":
+			bot.ability_every_ticks = 0
+		"no_links":
+			bot.synergy_pick = false
+		"cycle":
+			bot.counter_pick = false
+		"heavy":
+			bot.counter_pick = false
+			bot.build_order = [&"mortar", &"sniper", &"rail"]
+		"light":
+			bot.counter_pick = false
+			bot.build_order = [&"mg", &"rifleman", &"frost"]
+		"mixed":
+			# A fixed build that covers every damage type: what a player who read the chart
+			# once would settle on.
+			bot.counter_pick = false
+			bot.build_order = [&"mortar", &"sniper", &"mg", &"rail", &"frost", &"mortar",
+					&"mg", &"sniper"]
+		"no_loot":
+			bot.chase_crates = false
+		_:
+			return null
+	return bot
+
+
+## Where to call the run's ability now, or null to hold it. Per kind:
+## - STRIKE: the best cluster (below), if it reaches ability_threat.
+## - FREEZE: the same, but only near the gate (the lower 45% of the field, or at the gate): the
+##   freeze buys time where it matters.
+## - BURN: ahead of the best cluster on its path, so the pack walks down the burning road.
+## - MINES: ahead of the best cluster on its path, so its leaders walk onto them.
+## - REPAIR: when the gate is below repair_below, or a unit below half of that (the gate).
+func ability_target(run: Run) -> Variant:
+	var a: AbilityDef = run.ability
+	if a == null:
+		return null
+	if a.kind == AbilityDef.Kind.REPAIR:
+		var hurt: bool = run.gate_fraction() < repair_below
+		for plot: CombatSim.Plot in run.plots:
+			if not plot.is_empty() and plot.hp < plot.max_hp * repair_below * 0.5:
+				hurt = true
+		return Vector2(run.config.playfield_width() / 2.0, run.config.wall_y) if hurt else null
+	var min_y: float = run.config.wall_y * 0.55 if a.kind == AbilityDef.Kind.FREEZE else -INF
+	var reach: float = a.length / 2.0 if a.kind == AbilityDef.Kind.BURN else a.radius
+	var hit: Array = best_cluster(run, reach, min_y)
+	if hit.is_empty():
+		return null
+	var c: CombatSim.Enemy = hit[0]
+	match a.kind:
+		AbilityDef.Kind.BURN:
+			var road: PathGeo = run.combat.geos[c.path]
+			return road.point_at(minf(c.d + a.length * 0.35, road.length - 1.0))
+		AbilityDef.Kind.MINES:
+			var geo: PathGeo = run.combat.geos[c.path]
+			return geo.point_at(minf(c.d + a.mine_spacing * a.mine_count * 0.5, geo.length - 1.0))
+	return c.pos()
+
+
+## The enemy (among the 8 nearest the gate on each path, below `min_y`) with the most threat
+## within `radius` of it, as [enemy, threat], if that reaches ability_threat; an enemy striking
+## the gate always counts as enough. Empty when nothing qualifies.
+func best_cluster(run: Run, radius: float, min_y: float = -INF) -> Array:
+	var best: CombatSim.Enemy = null
+	var best_threat: float = 0.0
+	for group: Array in run.combat.path_enemies:
+		for i: int in mini(8, group.size()):
+			var c: CombatSim.Enemy = group[i]
+			if c.y < min_y or c.stun > 0.0:
+				continue
+			var threat: float = 0.0
+			for other_group: Array in run.combat.path_enemies:
+				for o: CombatSim.Enemy in other_group:
+					if o.pos().distance_squared_to(c.pos()) <= radius * radius:
+						threat += o.def.threat
+			if c.sieging and not c.at_barricade:
+				threat = maxf(threat, ability_threat)
+			if threat > best_threat:
+				best_threat = threat
+				best = c
+	return [best, best_threat] if best != null and best_threat >= ability_threat else []
+
+
 ## The open empty plot nearest `plot_focus`, or -1.
 func _next_empty_plot(run: Run) -> int:
 	var best: int = -1
@@ -267,6 +420,10 @@ func step_wave(run: Run) -> void:
 			run.tap(crate.pos())
 	if build_every_ticks > 0 and run.ticks % build_every_ticks == 0:
 		play_build(run)
+	if ability_every_ticks > 0 and run.ticks % ability_every_ticks == 0 and run.ability_ready():
+		var at: Variant = ability_target(run)
+		if at != null:
+			run.call_ability(at)
 	run.step()
 
 

@@ -7,7 +7,7 @@
 script = ExtResource("1_s")
 id = &"splitter"
 display_name = "Splitter"
-description = "A bloated brood sac: kill it and three Skitters burst out where it fell. Kill it early, and with splash; bullets just pop it."
+description = "A brood sac: when it dies, three Skitters burst out. Kill it with splash."
 hp = 22.0
 speed = 32.0
 wall_damage = 6.0

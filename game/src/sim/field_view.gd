@@ -34,7 +34,7 @@ func setup(run_config: RunConfig) -> void:
 	if ground == null:
 		ground = Sprite2D.new()
 		ground.centered = false
-		ground.scale = Vector2.ONE * Art.SCALE
+		ground.scale = Vector2.ONE * Art.FIELD_SCALE
 		add_child(ground)
 		_portal_layer = Node2D.new()
 		_portal_layer.draw.connect(_draw_portals)
@@ -45,15 +45,16 @@ func setup(run_config: RunConfig) -> void:
 		wall = Sprite2D.new()
 		wall.centered = false
 		wall.texture = Art.tex("field/wall")
-		wall.scale = Vector2.ONE * Art.SCALE
+		wall.scale = Vector2.ONE * Art.FIELD_SCALE
 		wall.z_index = 5
 		add_child(wall)
 	wall.position = Vector2(0, config.wall_y - WALL_TOP_OFFSET)
 	var key: String = "field/ground_%s" % config.map.id
 	ground.texture = Art.tex(key)
+	ground.modulate = UiTheme.look.field_tint
 	# The painted ground is authored at 540 wide; stretch it if a config's field differs.
 	var gs: Vector2 = Art.size(key)
-	ground.scale = Vector2(config.playfield_width() / gs.x, config.wall_y / gs.y) * Art.SCALE \
+	ground.scale = Vector2(config.playfield_width() / gs.x, config.wall_y / gs.y) * Art.FIELD_SCALE \
 			if gs.x > 0.0 else Vector2.ONE
 
 
@@ -96,9 +97,9 @@ func _draw_portals() -> void:
 			var font: Font = ThemeDB.fallback_font
 			var text: String = "W%d" % path.opens_at_wave
 			_portal_layer.draw_string_outline(font, p + Vector2(-12, 30), text,
-					HORIZONTAL_ALIGNMENT_LEFT, -1, 16, 5, Color(0, 0, 0, 0.9))
+					HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.look.caption + 1, 5, Color(0, 0, 0, 0.9))
 			_portal_layer.draw_string(font, p + Vector2(-12, 30), text,
-					HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#ff7ab0"))
+					HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.look.caption + 1, Color("#ff7ab0"))
 		elif path.opens_at_wave == wave_number and path.opens_at_wave > 1:
 			var k: float = 0.5 + 0.5 * sin(_t * 5.0)
 			Art.draw(_portal_layer, "fx/ring", p, 0.0, 1.4 + 0.6 * k, Color(1.0, 0.35, 0.6, 0.5 * k))

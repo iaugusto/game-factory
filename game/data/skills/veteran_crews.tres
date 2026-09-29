@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/skill_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"veteran_crews"
+title = "Veteran Crews"
+description = "New units arrive at level 2 for the level-1 price."
+branch = 0
+tier = 4
+cost = 2
+key = &"veteran_level"
+value = 1.0

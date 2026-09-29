@@ -14,8 +14,21 @@ extends RefCounted
 ##   v4 — same shape. The aimed squad was removed (2026-09-26 fixed-units work item), and with
 ##        it the meta upgrade "recruits" (+1 starting shooter). Refunded the same way
 ##        (REMOVED_META_COSTS_V4).
+##   v5 — {version, campaign: {best: {map: stars}, cleared: [maps], consoled: [maps]},
+##        tree: {owned: [skill ids]}, stats, legacy: {bricks, levels}}. Bricks and the six
+##        brick upgrades were retired for the campaign's stars and skill tree (2026-09-27
+##        sectors work item). Their balance and levels move to `legacy` verbatim: kept on file,
+##        not converted, because tree nodes have prerequisites and star prices with no brick
+##        equivalent. (No v4 save was ever written by a shipped build: nothing called save_to.)
+##   v6 — v5 plus tips: {seen: [tip keys], off: bool}. Contextual tips (2026-09-27 style and
+##        tutorials work item) remember which ones the player has read. A v5 save starts with
+##        none seen, so an existing player sees each tip once.
+##   v7 — v6 plus abilities: {last: ability id}. The special attack picked when a map starts
+##        (2026-09-27 content expansion) is remembered as the next default. Which attacks are
+##        unlocked is not stored: it follows from campaign.cleared (Campaign.ability_unlocked),
+##        so it can't drift. A v6 save starts on the strike, the only attack it knew.
 
-const CURRENT_VERSION: int = 4
+const CURRENT_VERSION: int = 7
 ## Brick prices per level of meta upgrades that no longer exist, for the v3 refund. Historical
 ## data: never edit an entry once a version that shipped it exists.
 const REMOVED_META_COSTS: Dictionary = {
@@ -28,31 +41,69 @@ const REMOVED_META_COSTS_V4: Dictionary = {
 }
 const DEFAULT_PATH: String = "user://save.json"
 
-var meta := MetaProgress.new()
+var campaign := Campaign.new()
+var tree := SkillTree.new()
+## The retired brick meta, as found in a v4 save ({bricks, levels}); empty for new saves.
+var legacy: Dictionary = {}
 var runs: int = 0
 var wins: int = 0
 var best_wave: int = 0
+## Tips read (TipDirector.Pending.key -> true), and whether the player turned tips off.
+var tips_seen: Dictionary = {}
+var tips_off: bool = false
+## The special attack picked last (the pick panel's default next time).
+var last_ability: StringName = &"strike"
 ## Set by load_from() when the file existed but could not be used; empty otherwise.
 var load_warning: String = ""
 
 
-## Record a finished run and bank its bricks.
-func record_run(waves_cleared: int, won: bool, bricks: int) -> void:
+## Record a finished run on `map_id` (stats and campaign stars). Returns Campaign.record's
+## result.
+func record_result(map_id: StringName, won: bool, waves_cleared: int, gate_fraction: float,
+		cfg: RunConfig) -> Dictionary:
 	runs += 1
 	wins += 1 if won else 0
 	best_wave = maxi(best_wave, waves_cleared)
-	meta.bricks += bricks
+	return campaign.record(map_id, won, waves_cleared, gate_fraction, cfg)
+
+
+## Stars left to spend in the tree.
+func stars_free(skill_tree: SkillTreeDef) -> int:
+	return campaign.stars_total() - tree.spent(skill_tree)
 
 
 func to_dict() -> Dictionary:
-	var levels: Dictionary = {}
-	for key: StringName in meta.levels:
-		levels[String(key)] = meta.levels[key]
-	return {
+	var best: Dictionary = {}
+	for key: StringName in campaign.best:
+		best[String(key)] = campaign.best[key]
+	var d: Dictionary = {
 		"version": CURRENT_VERSION,
-		"meta": {"bricks": meta.bricks, "levels": levels},
+		"campaign": {"best": best, "cleared": _ids(campaign.cleared),
+				"consoled": _ids(campaign.consoled)},
+		"tree": {"owned": _ids(tree.owned)},
 		"stats": {"runs": runs, "wins": wins, "best_wave": best_wave},
+		"tips": {"seen": _keys(tips_seen), "off": tips_off},
+		"abilities": {"last": String(last_ability)},
 	}
+	if not legacy.is_empty():
+		d["legacy"] = legacy.duplicate(true)
+	return d
+
+
+static func _keys(key_set: Dictionary) -> Array[String]:
+	var out: Array[String] = []
+	for key: Variant in key_set:
+		out.append(str(key))
+	out.sort()
+	return out
+
+
+static func _ids(id_set: Dictionary) -> Array[String]:
+	var out: Array[String] = []
+	for key: StringName in id_set:
+		out.append(String(key))
+	out.sort()
+	return out
 
 
 ## Build from a dictionary of any known version. Returns null if the version is unknown or
@@ -63,15 +114,26 @@ static func from_dict(data: Dictionary) -> SaveData:
 		return null
 	var d: Dictionary = migrated
 	var save := SaveData.new()
-	var meta_d: Dictionary = d.get("meta", {})
-	save.meta.bricks = int(meta_d.get("bricks", 0))
-	var levels: Dictionary = meta_d.get("levels", {})
-	for key: String in levels:
-		save.meta.levels[StringName(key)] = int(levels[key])
+	var camp: Dictionary = d.get("campaign", {})
+	var best: Dictionary = camp.get("best", {})
+	for key: String in best:
+		save.campaign.best[StringName(key)] = int(best[key])
+	for id: Variant in camp.get("cleared", []):
+		save.campaign.cleared[StringName(str(id))] = true
+	for id: Variant in camp.get("consoled", []):
+		save.campaign.consoled[StringName(str(id))] = true
+	for id: Variant in d.get("tree", {}).get("owned", []):
+		save.tree.owned[StringName(str(id))] = true
 	var stats: Dictionary = d.get("stats", {})
 	save.runs = int(stats.get("runs", 0))
 	save.wins = int(stats.get("wins", 0))
 	save.best_wave = int(stats.get("best_wave", 0))
+	save.legacy = d.get("legacy", {})
+	var tips: Dictionary = d.get("tips", {})
+	for key: Variant in tips.get("seen", []):
+		save.tips_seen[str(key)] = true
+	save.tips_off = bool(tips.get("off", false))
+	save.last_ability = StringName(str(d.get("abilities", {}).get("last", "strike")))
 	return save
 
 
@@ -92,6 +154,14 @@ static func migrate(data: Dictionary) -> Variant:
 				d = _v2_to_v3(d)
 			3:
 				d = _refund_removed(d, REMOVED_META_COSTS_V4, 4)
+			4:
+				d = _v4_to_v5(d)
+			5:
+				d["tips"] = {"seen": [], "off": false}
+				d["version"] = 6
+			6:
+				d["abilities"] = {"last": "strike"}
+				d["version"] = 7
 		version = int(d["version"])
 	return d
 
@@ -106,6 +176,18 @@ static func _v1_to_v2(d: Dictionary) -> Dictionary:
 
 static func _v2_to_v3(d: Dictionary) -> Dictionary:
 	return _refund_removed(d, REMOVED_META_COSTS, 3)
+
+
+## Bricks are retired: the old meta moves to `legacy` verbatim; campaign and tree start empty.
+static func _v4_to_v5(d: Dictionary) -> Dictionary:
+	var meta_d: Dictionary = d.get("meta", {})
+	return {
+		"version": 5,
+		"campaign": {"best": {}, "cleared": [], "consoled": []},
+		"tree": {"owned": []},
+		"stats": d.get("stats", {"runs": 0, "wins": 0, "best_wave": 0}),
+		"legacy": {"bricks": int(meta_d.get("bricks", 0)), "levels": meta_d.get("levels", {})},
+	}
 
 
 ## Refund the levels of removed meta upgrades (`removed`: id -> brick price per level) as

@@ -88,12 +88,12 @@ func test_card_pick_applies_and_returns_to_build() -> void:
 	assert_int(run.wave_index).is_equal(1)
 
 
-func test_last_wave_clear_wins_with_bricks() -> void:
+func test_last_wave_clear_wins_with_the_gate_intact() -> void:
 	var run := _new_run(_two_wave_config())
 	Fixtures.run_wave(run)
 	Fixtures.run_wave(run)
 	assert_int(run.phase).is_equal(Run.Phase.WON)
-	assert_int(run.bricks()).is_equal(1 + 2 + run.config.win_brick_bonus)
+	assert_float(run.gate_fraction()).is_equal(1.0)
 
 
 func test_wall_breaks_and_run_is_lost() -> void:
@@ -102,7 +102,7 @@ func test_wall_breaks_and_run_is_lost() -> void:
 	var run := Run.new(cfg, 1)
 	Fixtures.run_wave(run)
 	assert_int(run.phase).is_equal(Run.Phase.LOST)
-	assert_int(run.bricks()).is_equal(0)
+	assert_float(run.gate_fraction()).is_equal(0.0)
 
 
 func test_wall_regenerates() -> void:

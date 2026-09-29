@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/skill_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"war_chest"
+title = "War Chest"
+description = "+30 starting coins."
+branch = 2
+tier = 1
+cost = 1
+key = &"start_gold_bonus"
+value = 30.0

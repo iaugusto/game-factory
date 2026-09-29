@@ -12,7 +12,9 @@ store.
 
 ## Status
 
-> **Current as of 2026-09-26: prototype in progress, and playable with real art.**
+> **Current as of 2026-09-28: prototype in progress, and playable with real art.** Content
+> expansion Stages 1–2 are done (special attacks; four new enemies built but not yet in any
+> sector's waves, see `--showcase`); Stages 3–4 (bosses, sectors 4–6) are next.
 >
 > - **The concept:** "Hold the Gate" (working title). A fixed outpost holds its gate against an
 >   alien swarm coming down paths that bend, merge, and break open mid-run.
@@ -23,33 +25,66 @@ store.
 >     breaks, the run is lost.**
 >   - Spitters jam your units from range. **Ravagers destroy units** beside their path (repair
 >     them for coins). Splitters burst into Skitters, and Menders heal the swarm. Late waves
->     bring tinted, starred **elites**.
+>     bring tinted, starred **elites**. Coming with sectors 4–6: **Wasps** fly over the
+>     barricade (Mortars can't hit them), **Wardens** shield the pack, **Burrowers** tunnel
+>     under your fire, and **Bombardiers** lob acid at the gate from range.
 >   - **Know your weapon:**
 >     - Every enemy is weak to one damage type and may resist another. Armour blunts light
 >       hits.
->     - The build phase previews the next wave, and an intel card introduces each new enemy.
+>     - The build phase previews the next wave, and a tip introduces each new enemy.
 >     - Selling refunds 50%, so replacing a unit costs.
 >     - Coins also buy masteries for maxed units, one barricade in front of the wall (a kill
 >       zone), and gate repairs.
 >   - Coins put units on spots and upgrade them, at any time, including mid-wave. The harder a
 >     unit hits, the longer it reloads.
->   - A card after each wave; bricks buy permanent upgrades between runs.
+>   - A card after each wave.
+>   - **Special attacks:** pick one when a map starts: Artillery Strike, Cryo Bomb (freezes
+>     a blast solid), Napalm Line (a burning stretch of road), Minefield (mines on a path) or Repair
+>     Drones (gate and units, no aim). Strike and Cryo are free; each of the first three
+>     sectors unlocks one more. During waves its button arms it (then tap the field); it
+>     reloads in 30–45 s. The first time you take one, a tutorial card shows it in a looping
+>     clip.
+>   - **Unit links:** units built near each other boost each other. Each pair of unit types
+>     has its own effect (e.g. Mortar + Rail Cannon = Siege Battery, +15% damage each),
+>     shown as lines and on the unit's card.
+>   - **A campaign of three sectors.** Each is worth up to 3 stars: win it, and keep the gate
+>     above 50% and 90%. Stars buy nodes of a permanent **skill tree** (3 branches × 5, with a
+>     free reset), such as Last Stand (a fallen unit explodes) and Scavengers (+10% loot).
+>     Progress is saved.
+>   - **Tips teach as you go.** The first time something new happens (a new enemy, the first
+>     crate, the siege, the card pick, …), time stops. A spotlight and 1–3 short cards
+>     explain it. Each tip shows once; the campaign's ⚙ turns tips off or replays them.
+> - **Art:** sharp on phones and tablets (4× sprites with mipmaps). Each unit is coloured by
+>   its damage type, and each enemy has its own hue. Barricade slots show the barricade's
+>   shape. Each sector has its own biome (desert, red-rock canyon, tundra), and the swarm's
+>   creep stains the lane edges. See [`docs/2026-09-27-art-readability/`](./docs/2026-09-27-art-readability/).
+> - **Look:** one data-driven UI style (`data/styles/hybrid.tres`): Lilita One + Nunito,
+>   rounded chunky buttons, navy panels with amber actions. The user picked it from three
+>   directions (E6, [`docs/2026-09-27-style-and-tutorials/`](./docs/2026-09-27-style-and-tutorials/)).
 > - **The pivots:**
 >   - Gates were dropped for build spots and crates, in
 >     [`docs/2026-09-25-build-spots-loot-and-art/`](./docs/2026-09-25-build-spots-loot-and-art/).
 >   - The aimed squad was removed, in
 >     [`docs/2026-09-26-fixed-units-wall-spots/`](./docs/2026-09-26-fixed-units-wall-spots/).
-> - **Maps:**
->   - **Frontier Outpost:** 3 straight paths.
->   - **Canyon Pass:** two entrances merge into a muddy trunk; flank breaches open at waves 4
->     and 7; pads unlock as they do.
+> - **Sectors (maps):**
+>   1. **Frontier Outpost:** 3 straight paths.
+>   2. **Canyon Pass:** two entrances merge into a muddy trunk; flank breaches open at waves 4
+>      and 7; pads unlock as they do.
+>   3. **Switchback Ridge:** one path zig-zags across the field twice; a fork opens down the
+>      left flank at wave 3, and a tunnel breaks open near the gate at wave 6.
 >
->   Pick with `--map=canyon`, or "PLAY CANYON PASS" on the result screen.
+>   The game opens on the campaign screen. For a direct run, pass `--map=ID`.
 > - **Next:** escalating difficulty.
->   - **Done:** the gate siege (E2), counters and coin sinks (E3), maps from paths (E4), and
->     new enemies, destroyable units and elites (E5a).
->   - **Next:** a campaign of maps with saves and a skill tree (E5b), then the active ability
->     and synergies (E5c).
+>   - **Done:** the gate siege (E2), counters and coin sinks (E3), maps from paths (E4), new
+>     enemies, destroyable units and elites (E5a), sectors with the skill tree and saves
+>     (E5b, [`docs/2026-09-27-sectors-and-skill-tree/`](./docs/2026-09-27-sectors-and-skill-tree/)),
+>     the visual style with contextual tips (E6), the artillery strike with unit links (E5c),
+>     and the balance bot, tuning and juice pass (B4,
+>     [`docs/2026-09-27-b4-balance-and-juice/`](./docs/2026-09-27-b4-balance-and-juice/)).
+>   - **Now:** the content expansion to 6 sectors
+>     ([`docs/2026-09-27-content-expansion/`](./docs/2026-09-27-content-expansion/)). Stage 1,
+>     the special attacks, is done; next come 4 new enemies, bosses, and 3 new sectors.
+>   - **Then:** the Android build (B5). The user tests on the phone once the experience is complete.
 >
 >   See
 >   [`docs/2026-09-26-escalating-difficulty/`](./docs/2026-09-26-escalating-difficulty/).
@@ -79,10 +114,10 @@ implementation log). See [`CLAUDE.md`](./CLAUDE.md) §3.
 | `docs/detailed-project-overview.md` | Canonical index of every file and system, with rationale and dependencies. |
 | `docs/YYYY-MM-DD-*/` | One folder per work item: `research.md` → `plan.md` → `implementation.md`. |
 | `.claude/` | Claude Code skills, agents and (untracked) local permissions. |
-| `game/` | Godot 4.7.2 project: `src/`, `data/`, `scenes/`, `tests/`, vendored `addons/gdUnit4/`. |
+| `game/` | Godot 4.7.2 project: `src/`, `data/`, `scenes/`, `tests/`, `clips/` (generated tutorial clips, `.ogv`), vendored `addons/gdUnit4/`. |
 | `scripts/` | `test.sh` (headless game tests), `capture_clip.sh` (record a clip). |
 | `.tools/` | Repo-local Godot binary (git-ignored; see Quick start). |
-| `tools/` | Python (`uv`) tooling, `gf-tools`: the procedural art generator (`uv run gen-art`; it paints each map's ground from `game/data/maps`). Balancing, content and store tools come later. |
+| `tools/` | Python (`uv`) tooling, `gf-tools`: the procedural art generator (`uv run gen-art`; it paints each map's ground from `game/data/maps`), the balance report (`uv run balance`) and the tutorial clips (`uv run make-clips`). Content and store tools come later. |
 | `prototypes/` | _planned — throwaway experiments; never imported by the game._ |
 
 ## Quick start
@@ -96,17 +131,28 @@ against `SHA512-SUMS.txt`, and unzip it there. Or point `$GODOT_BIN` at any 4.7.
 scripts/test.sh                                                          # all game tests, headless
 (cd tools && uv run python -m unittest discover -s tests)                # tool tests
 (cd tools && uv run gen-art)                                             # regenerate game/art/*.svg
-.tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path game                # play (tap a pad to build; tap crates for coins)
+(cd tools && uv run balance --seeds 50 --out report.md)                  # bot balance report (~5 min)
+(cd tools && uv run make-clips)                                          # re-record game/clips/*.ogv (xvfb-run + $FFMPEG_BIN)
+.tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path game                # the campaign (tap a pad to build; tap crates for coins)
 .tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path game -- --autoplay --seed=3   # watch the bot
-.tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path game -- --map=canyon          # the second map
+.tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path game -- --map=switchback --tree=all  # a sector directly, full tree
 scripts/capture_clip.sh midgame 20 --seed=5 --autoplay --skip-to-wave=5  # record captures/midgame.mp4
+scripts/capture_clip.sh tips 60 --seed=3 --autoplay --tips             # the bot reads the first-run tips
 .tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path game --editor       # open the editor (WSLg)
 ```
 
 Under WSL, Godot falls back from Vulkan to OpenGL 3 (via D3D12), and audio uses the dummy driver.
 Both are expected.
 
-Launch args (after `--`): `--seed=N`, `--map=ID` (`outpost`, `canyon`), `--autoplay`, `--skip-to-wave=K` (to the build phase of wave
-K), `--skip=S` (S seconds into it), `--perf`, `--quit-on-end`; dev-only `--stress`,
-`--open-plot=N`.
+Launch args (after `--`): `--save=PATH` (default `user://save.json`); any of the following
+skips the campaign screen for a direct run that records nothing: `--seed=N`, `--map=ID`
+(`outpost`, `canyon`, `switchback`), `--tree=all|none|id,id` (skill-tree nodes), `--autoplay`,
+`--skip-to-wave=K` (to the build phase of wave K), `--skip=S` (S seconds into it), `--perf`,
+`--quit-on-end`, `--ability=ID` (take this special attack; skips the pick); dev-only
+`--stress` (`--stress=mix`: with Stage 2 enemies), `--open-plot=N`, `--pick=ID` (answer the
+pick), `--demo=ID` (a staged clip of an attack), `--showcase=IDS` (one wave of those enemies,
+e.g. `--showcase=wasp,warden,burrower,bombardier`), `--gold=N` (starting coins), and
+`--open-tree` (campaign screen).
+`--tips` shows tips in a direct run (fresh, nothing saved; with `--autoplay` the bot reads
+them). `--style=ID` picks a UI style from `game/data/styles/` (any scene).
 `capture_clip.sh` finds ffmpeg via `$FFMPEG_BIN` or PATH.

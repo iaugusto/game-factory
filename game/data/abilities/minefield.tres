@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AbilityDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/ability_def.gd" id="1_a"]
+
+[resource]
+script = ExtResource("1_a")
+id = &"minefield"
+display_name = "Minefield"
+short_name = "MINES"
+description = "Drops five mines along a path. Each blows up under the first enemy to reach it."
+icon = "ui/ability_minefield"
+clip = "res://clips/minefield.ogv"
+kind = 3
+unlocked_by = &"canyon"
+cooldown = 35.0
+delay = 0.4
+radius = 40.0
+damage = 12.0
+mine_count = 5
+mine_spacing = 34.0

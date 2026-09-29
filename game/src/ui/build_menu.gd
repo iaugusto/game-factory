@@ -19,7 +19,7 @@ signal repair_requested(plot: int)
 signal mastery_requested(plot: int, index: int)
 signal closed
 
-const RING_RADIUS: float = 84.0
+const RING_RADIUS: float = 100.0
 const BUTTON_SIZE: float = 60.0
 
 var plot: int = -1
@@ -32,6 +32,7 @@ var _sell: Button
 var _repair: Button
 var _masteries: Array[Button] = []
 var _stats: Label
+var _links: Label
 var _card: PanelContainer
 var _card_above: bool = false
 var _ring: Control
@@ -87,7 +88,7 @@ func _open_build(run: Run) -> void:
 		b.custom_minimum_size = Vector2(BUTTON_SIZE, BUTTON_SIZE)
 		b.size = b.custom_minimum_size
 		b.position = p - b.size / 2.0
-		UiTheme.style_button(b, false, 12, int(BUTTON_SIZE / 2.0))
+		UiTheme.style_button(b, false, &"caption", int(BUTTON_SIZE / 2.0))
 		b.pressed.connect(func() -> void: build_requested.emit(plot, u.id))
 		var icon := UnitIcon.new()
 		icon.unit = u
@@ -100,16 +101,23 @@ func _open_build(run: Run) -> void:
 		var badge := UiTheme.icon(damage_icon(u.damage_type), 20)
 		badge.position = Vector2(BUTTON_SIZE - 18, -2)
 		b.add_child(badge)
+		# Links this unit would form here (Synergies), as a small tag on the button.
+		var forms: Array[SynergyDef] = Synergies.preview(run.plots, run.config, plot, u.id)
+		if not forms.is_empty():
+			var tag := UiTheme.label("LINK" if forms.size() == 1 else "LINK×%d" % forms.size(),
+					&"caption", UiTheme.look.owned)
+			tag.position = Vector2(-10, -12)
+			b.add_child(tag)
 		_ring.add_child(b)
-		var title := UiTheme.label(u.display_name, 11, UiTheme.TEXT, 4)
+		var title := UiTheme.label(u.display_name, &"caption", UiTheme.look.text)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title.custom_minimum_size = Vector2(90, 0)
-		title.position = p + Vector2(-45, BUTTON_SIZE / 2.0 - 4)
+		title.custom_minimum_size = Vector2(100, 0)
+		title.position = p + Vector2(-50, BUTTON_SIZE / 2.0 - 4)
 		_ring.add_child(title)
-		var price := UiTheme.label("", 13, UiTheme.ACCENT, 4)
+		var price := UiTheme.label("", &"caption", UiTheme.look.coin)
 		price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		price.custom_minimum_size = Vector2(90, 0)
-		price.position = p + Vector2(-45, BUTTON_SIZE / 2.0 + 9)
+		price.custom_minimum_size = Vector2(100, 0)
+		price.position = p + Vector2(-50, BUTTON_SIZE / 2.0 + 12)
 		_ring.add_child(price)
 		_unit_buttons[u.id] = b
 		_price_labels[u.id] = price
@@ -118,14 +126,14 @@ func _open_build(run: Run) -> void:
 
 func _open_upgrade(run: Run) -> void:
 	_card = PanelContainer.new()
-	_card.add_theme_stylebox_override("panel", UiTheme.panel(UiTheme.PANEL, 12,
-			Color(UiTheme.ACCENT, 0.35), 1))
+	_card.add_theme_stylebox_override("panel", UiTheme.panel(Color(0, 0, 0, 0), -1,
+			Color(UiTheme.look.title, 0.3), 1))
 	_card.custom_minimum_size = Vector2(230, 0)
 	_card.mouse_filter = Control.MOUSE_FILTER_STOP
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	_card.add_child(box)
-	_stats = UiTheme.label("", 14, UiTheme.TEXT, 3)
+	_stats = UiTheme.label("", &"caption", UiTheme.look.text)
 	_stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_stats.custom_minimum_size = Vector2(206, 0)
 	box.add_child(_stats)
@@ -137,33 +145,37 @@ func _open_upgrade(run: Run) -> void:
 	for e: EnemyDef in Counters.enemies_countered_by(run.config, u):
 		strong.append(e.display_name)
 	var type_label := UiTheme.label("%s · strong vs %s" % [UnitDef.DAMAGE_TYPE_NAMES[u.damage_type],
-			", ".join(strong) if not strong.is_empty() else "—"], 12, UiTheme.GOOD, 3)
+			", ".join(strong) if not strong.is_empty() else "—"], &"caption", UiTheme.look.good)
 	type_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	type_label.custom_minimum_size = Vector2(180, 0)
 	type_row.add_child(type_label)
 	box.add_child(type_row)
+	_links = UiTheme.label("", &"caption", UiTheme.look.owned)
+	_links.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_links.custom_minimum_size = Vector2(206, 0)
+	box.add_child(_links)
 	_upgrade = Button.new()
 	_upgrade.custom_minimum_size = Vector2(206, 44)
-	UiTheme.style_button(_upgrade, true, 16)
+	UiTheme.style_button(_upgrade, true, &"body")
 	_upgrade.pressed.connect(func() -> void: upgrade_requested.emit(plot))
 	box.add_child(_upgrade)
 	for i: int in u.masteries.size():
 		var m: MasteryDef = u.masteries[i]
 		var mb := Button.new()
 		mb.custom_minimum_size = Vector2(206, 44)
-		UiTheme.style_button(mb, true, 13)
+		UiTheme.style_button(mb, true, &"caption")
 		mb.pressed.connect(func() -> void: mastery_requested.emit(plot, i))
 		mb.tooltip_text = m.description
 		box.add_child(mb)
 		_masteries.append(mb)
 	_repair = Button.new()
 	_repair.custom_minimum_size = Vector2(206, 36)
-	UiTheme.style_button(_repair, false, 14)
+	UiTheme.style_button(_repair, false, &"caption")
 	_repair.pressed.connect(func() -> void: repair_requested.emit(plot))
 	box.add_child(_repair)
 	_sell = Button.new()
 	_sell.custom_minimum_size = Vector2(206, 36)
-	UiTheme.style_button(_sell, false, 14)
+	UiTheme.style_button(_sell, false, &"caption")
 	_sell.pressed.connect(func() -> void: sell_requested.emit(plot))
 	box.add_child(_sell)
 	_ring.add_child(_card)
@@ -186,7 +198,7 @@ func sync(run: Run) -> void:
 		_unit_buttons[id].disabled = not ok
 		_icons[id].dimmed = not ok
 		_price_labels[id].text = "● %d" % cost
-		_price_labels[id].add_theme_color_override("font_color", UiTheme.ACCENT if ok else UiTheme.BAD)
+		_price_labels[id].add_theme_color_override("font_color", UiTheme.look.coin if ok else UiTheme.look.threat)
 	if _upgrade != null:
 		var p: CombatSim.Plot = run.plots[plot]
 		if p.is_empty():
@@ -196,9 +208,16 @@ func sync(run: Run) -> void:
 		var lvl: int = p.level
 		var next: int = mini(lvl + 1, u.max_level())
 		var reload_now: float = run.combat.plot_reload(p)
-		var reload_next: float = run.combat.reload_for(u, next, p.mastery)
+		var reload_next: float = run.combat.reload_for(u, next, p.mastery, p.syn)
 		var dmg_now: float = run.combat.plot_damage(p)
-		var dmg_next: float = run.combat.damage_for(u, next, p.mastery)
+		var dmg_next: float = run.combat.damage_for(u, next, p.mastery, p.syn)
+		var names: PackedStringArray = []
+		for link: Array in p.links:
+			var title: String = (link[1] as SynergyDef).title
+			if not names.has(title):
+				names.append(title)
+		_links.visible = not names.is_empty()
+		_links.text = "LINKS: %s\n%s" % [", ".join(names), p.syn.summary()]
 		var mastery: String = "\n★ %s: %s" % [p.mastery.title, p.mastery.description] \
 				if p.mastery != null else ""
 		if cost < 0:
@@ -260,4 +279,5 @@ func _clear() -> void:
 	_repair = null
 	_masteries.clear()
 	_stats = null
+	_links = null
 	_card = null

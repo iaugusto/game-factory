@@ -1,12 +1,14 @@
 [project]
 name = "gf-tools"
 version = "0.1.0"
-description = "Game-factory tooling outside the engine: procedural art generation (more to come: balancing, content, store metadata)."
+description = "Game-factory tooling outside the engine: procedural art generation, balance reports and tutorial clips (more to come: content, store metadata)."
 requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
 gen-art = "gf_tools.art.cli:main"
+balance = "gf_tools.balance.cli:main"
+make-clips = "gf_tools.clips.cli:main"
 
 [build-system]
 requires = ["hatchling"]

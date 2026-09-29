@@ -56,6 +56,7 @@ value = 0.25
 [resource]
 script = ExtResource("1_s")
 id = &"canyon"
+biome = &"canyon"
 display_name = "Canyon Pass"
 paths = Array[ExtResource("path_s")]([SubResource("path_0"), SubResource("path_1"), SubResource("path_2"), SubResource("path_3")])
 plots = PackedVector2Array(270, 90, 30, 210, 510, 210, 270, 250, 175, 480, 365, 480, 180, 640, 360, 640, 180, 775, 360, 775, 165, 420, 375, 420, 85, 876, 270, 876, 455, 876)

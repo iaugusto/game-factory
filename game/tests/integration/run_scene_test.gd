@@ -12,6 +12,7 @@ func before_test() -> void:
 	add_child(scene)
 	scene.set_physics_process(false)
 	scene.set_process(false)
+	scene.offer_pick = false
 	scene.start_run(4242)
 
 
@@ -298,6 +299,21 @@ func test_barricade_slots_open_the_barricade_card() -> void:
 	assert_int(scene.run.barricade().level).is_equal(2)
 
 
+func test_a_barricade_slot_is_tapped_by_its_shape() -> void:
+	# The tap area is the barricade's footprint (what the slot ghost shows), not a circle: its
+	# ends are wide of the centre, but a tap just above or below misses.
+	var slot_pos: Vector2 = scene.config.map.barricade_slots[1]
+	var size: Vector2 = Art.size(BarricadeField.SLOT_KEY)
+	assert_float(size.x).is_greater(size.y * 2.0)
+	var bf: BarricadeField = scene.barricade_field
+	assert_int(bf.slot_at(slot_pos + Vector2(size.x * 0.45, 0))).is_equal(1)
+	assert_int(bf.slot_at(slot_pos - Vector2(size.x * 0.45, size.y * 0.4))).is_equal(1)
+	assert_int(bf.slot_at(slot_pos + Vector2(0, size.y / 2.0 + BarricadeField.TAP_SLOP + 4.0))) \
+			.is_equal(-1)
+	assert_int(bf.slot_at(slot_pos + Vector2(size.x / 2.0 + BarricadeField.TAP_SLOP + 4.0, 0))) \
+			.is_equal(-1)
+
+
 func test_the_build_bar_previews_the_wave_and_repairs_the_gate() -> void:
 	var counts: Dictionary = WaveSchedule.enemy_counts(scene.config.waves[0])
 	assert_int(scene.build_bar.previewed_count()).is_equal(counts.size())
@@ -309,23 +325,101 @@ func test_the_build_bar_previews_the_wave_and_repairs_the_gate() -> void:
 	assert_float(scene.run.wall_hp()).is_equal(scene.run.wall_max() - 50.0 + scene.config.gate_repair_hp)
 
 
-func test_intel_cards_introduce_new_enemies_before_their_wave() -> void:
-	# The run opens on wave 1's build phase: its enemies are all new.
-	assert_bool(scene.intel_card.visible).is_true()
-	for e: EnemyDef in WaveSchedule.new_enemies(scene.config.waves, 0):
-		assert_bool(scene.intel_card.shown.has(e.id)).is_true()
-	scene.intel_card.close()
-	assert_bool(scene.intel_card.visible).is_false()
-	# Skip to a wave that brings nothing new: no card.
-	var plain: int = -1
-	for i: int in range(1, scene.config.waves.size()):
-		if WaveSchedule.new_enemies(scene.config.waves, i).is_empty():
-			plain = i
+func test_tips_are_off_in_a_direct_run() -> void:
+	scene.pump_tips()
+	assert_bool(scene.tip_layer.is_active()).is_false()
+
+
+func test_the_first_run_teaches_the_enemy_then_building_then_starting() -> void:
+	var seen: Dictionary = {}
+	scene.enable_tips(seen)
+	scene.start_run(4242)
+	scene.pump_tips()
+	# Wave 1's enemy comes first: its portrait card, with no spotlight.
+	var first: Array[EnemyDef] = WaveSchedule.new_enemies(scene.config.waves, 0)
+	assert_str(scene.tip_layer.current.key()).is_equal("new_enemy:%s" % first[0].id)
+	scene.tip_layer.advance()
+	assert_bool(seen.has("new_enemy:%s" % first[0].id)).is_true()
+	for i: int in range(1, first.size()):
+		scene.pump_tips()
+		scene.tip_layer.advance()
+	# Then the "do" card: a spotlight on an empty pad, and only a tap there gets through.
+	scene.pump_tips()
+	assert_str(String(scene.tip_layer.current.def.id)).is_equal("first_build")
+	var spot: Rect2 = scene.tip_layer.focus_rect()
+	assert_float(spot.size.x).is_greater(0.0)
+	scene.tip_layer.complete(&"unit_built")  # not the event it waits for
+	assert_bool(scene.tip_layer.is_active()).is_true()
+	scene.tip_layer.focus_pressed.emit(_press(spot.get_center()))
+	assert_bool(scene.build_menu.is_open()).is_true()
+	assert_bool(scene.tip_layer.is_active()).is_false()
+	# Build, and the start button gets its card.
+	scene.run.gold = 999
+	scene.build_menu.build_requested.emit(scene.build_menu.plot, scene.config.units[0].id)
+	scene.pump_tips()
+	assert_str(String(scene.tip_layer.current.def.id)).is_equal("start_wave")
+	assert_bool(scene.tip_layer.focus_rect().intersects(
+			scene.build_bar.start_button.get_global_rect())).is_true()
+
+
+func test_no_tip_opens_over_a_menu_and_none_repeats() -> void:
+	var seen: Dictionary = {}
+	scene.enable_tips(seen)
+	scene.start_run(4242)
+	scene.open_plot(_first_open_empty_plot())
+	scene.pump_tips()
+	assert_bool(scene.tip_layer.is_active()).is_false()
+	scene.build_menu.close()
+	var shown: Dictionary = {}
+	for i: int in 12:
+		scene.pump_tips()
+		if not scene.tip_layer.is_active():
 			break
-	assert_int(plain).is_greater(0)
-	scene.fast_forward_to_wave(plain + 1)
-	if scene.run.phase == Run.Phase.BUILD and scene.run.wave_index == plain:
-		assert_bool(scene.intel_card.visible).is_false()
+		var key: String = scene.tip_layer.current.key()
+		assert_bool(shown.has(key)).is_false()
+		shown[key] = true
+		if scene.tip_layer.current.def.id == &"first_build":
+			scene.open_plot(scene.run.plots[0].index if scene.run.plot_open(0) else _first_open_empty_plot())
+			scene.build_menu.close()
+		else:
+			scene.tip_layer.advance()
+	scene.start_run(99)
+	scene.pump_tips()
+	assert_bool(scene.tip_layer.is_active()).is_false()
+
+
+func test_a_crate_tip_stops_time_mid_wave() -> void:
+	var seen: Dictionary = {}
+	for t: TipDef in scene.config.tips:
+		if t.trigger != &"crate_spawned" and t.trigger != &"boost_crate":
+			seen[String(t.id)] = true
+	for w: WaveDef in scene.config.waves:
+		for entry: SpawnEntry in w.spawns:
+			seen["new_enemy:%s" % entry.enemy.id] = true
+	scene.enable_tips(seen)
+	scene.start_wave()
+	var spawned: Array = [false]
+	scene.run.combat.crate_spawned.connect(func(_c: CombatSim.Crate) -> void: spawned[0] = true)
+	_tick_until(func() -> bool: return spawned[0])
+	scene.pump_tips()
+	assert_bool(scene.tip_layer.is_active()).is_true()
+	assert_array([&"crate_spawned", &"boost_crate"]).contains(
+			[scene.tip_layer.current.def.trigger])
+	assert_float(scene.tip_layer.focus_rect().size.x).is_greater(0.0)
+	scene.tip_layer.freeze = 1.0
+	scene._update_tips()
+	assert_float(Engine.time_scale).is_less_equal(RunController.TIP_TIME_FLOOR)
+	scene.tip_layer.advance()
+	scene.tip_layer.freeze = 0.0
+	scene._update_tips()
+	assert_float(Engine.time_scale).is_equal(1.0)
+
+
+func _first_open_empty_plot() -> int:
+	for p: CombatSim.Plot in scene.run.plots:
+		if p.is_empty() and scene.run.plot_open(p.index):
+			return p.index
+	return -1
 
 
 func test_switching_to_the_canyon_rebuilds_the_field() -> void:
@@ -349,11 +443,21 @@ func test_switching_to_the_canyon_rebuilds_the_field() -> void:
 	assert_bool(scene.build_menu.is_open()).is_true()
 
 
-func test_the_result_screen_offers_the_other_map() -> void:
+func test_a_loss_offers_a_retry_and_a_win_the_next_sector() -> void:
 	scene.start_wave()
 	scene.run.wall_damage_taken = scene.run.wall_max() - 0.5
 	_tick_until(func() -> bool: return scene.run.phase == Run.Phase.LOST, 60 * 60)
+	assert_bool(scene.overlay.map_button.visible).is_false()
+	assert_int(scene.overlay.stars.earned).is_equal(0)
+	scene.overlay.restart_pressed.emit()
+	assert_str(String(scene.config.map.id)).is_equal("outpost")
+	assert_int(scene.run.phase).is_equal(Run.Phase.BUILD)
+	# A win (forced here) offers sector 2, with stars by the gate left.
+	scene.run.wall_damage_taken = scene.run.wall_max() * 0.3
+	scene.run.phase = Run.Phase.WON
+	scene._on_phase_changed(Run.Phase.WON)
 	assert_bool(scene.overlay.map_button.visible).is_true()
+	assert_int(scene.overlay.stars.earned).is_equal(2)
 	scene.overlay.next_map_pressed.emit()
 	assert_str(String(scene.config.map.id)).is_equal("canyon")
 	assert_int(scene.run.phase).is_equal(Run.Phase.BUILD)
@@ -402,8 +506,33 @@ func test_enemies_render_in_one_batch_per_type() -> void:
 		for s: SpawnEntry in w.spawns:
 			types[s.enemy.id] = true
 	assert_int(scene.enemy_field.batch_count()).is_less_equal(types.size())
-	# Shadows (1) + a batch per type + the HP bar layer: never a node per enemy.
-	assert_int(scene.enemy_field.get_child_count()).is_less_equal(types.size() + 2)
+	# Shadows, mounds and bubbles (3) + a batch per type + the HP bar layer: never a node per
+	# enemy.
+	assert_int(scene.enemy_field.get_child_count()).is_less_equal(types.size() + 4)
+
+
+## Stage 2 enemies in the real scene (the --showcase wave, behind an unbreakable gate): the
+## view shows burrowers as mounds, shields as bubbles and Bombardiers' globs, in batches.
+func test_the_stage2_enemies_render_mounds_bubbles_and_globs() -> void:
+	var cfg: RunConfig = RunController.showcase_config(scene.config,
+			PackedStringArray(["wasp", "warden", "burrower", "bombardier"]))
+	cfg.wall_hp = 1e6
+	scene.config = cfg
+	scene.start_run(7)
+	scene.start_wave()
+	var seen := {"mound": false, "bubble": false, "lob": false, "flyer": false}
+	for i: int in 60 * 70:
+		scene.tick(1)
+		if i % 10 != 0:
+			continue
+		scene.sync_views(1.0 / 6.0)
+		seen["mound"] = seen["mound"] or scene.enemy_field.mound_count() > 0
+		seen["bubble"] = seen["bubble"] or scene.enemy_field.bubble_count() > 0
+		seen["lob"] = seen["lob"] or not scene.run.combat.lobs.is_empty()
+		for e: CombatSim.Enemy in scene.run.combat.path_enemies[0] + scene.run.combat.path_enemies[1]:
+			seen["flyer"] = seen["flyer"] or e.def.flying
+	for k: String in seen:
+		assert_bool(seen[k]).override_failure_message("never saw a %s" % k).is_true()
 
 
 func test_crate_views_are_pooled_not_leaked() -> void:
@@ -419,11 +548,139 @@ func test_crate_views_are_pooled_not_leaked() -> void:
 
 
 func test_popups_stay_inside_the_playfield() -> void:
-	scene.fx.popup("+100 VERY WIDE TEXT", Vector2(-50, 300), Color.WHITE, 30)
+	scene.fx.popup("+100 VERY WIDE TEXT", Vector2(-50, 300), Color.WHITE, &"heading")
 	scene.fx.popup("+100 VERY WIDE TEXT", Vector2(scene.config.playfield_width() + 50, 300),
-			Color.WHITE, 30)
+			Color.WHITE, &"heading")
 	for child: Node in scene.fx.get_children():
 		if child is Label and (child as Label).visible:
 			var l: Label = child
 			assert_float(l.position.x).is_greater_equal(0.0)
 			assert_float(l.position.x + l.size.x).is_less_equal(scene.config.playfield_width())
+
+
+func test_the_ability_button_arms_and_the_next_tap_calls_it() -> void:
+	assert_str(String(scene.run.ability.id)).is_equal("strike")  # a direct run's default
+	scene.start_wave()
+	scene.tick(1)
+	scene.sync_views()
+	assert_bool(scene.ability_button.visible).is_true()
+	scene.toggle_ability()
+	assert_bool(scene.aiming).is_true()
+	assert_float(Engine.time_scale).is_equal(scene.config.build_menu_time_scale)
+	var at := Vector2(270, 300)
+	scene.handle_pointer(_press(_screen(at)))
+	assert_bool(scene.aiming).is_false()
+	assert_float(Engine.time_scale).is_equal(1.0)
+	assert_int(scene.run.combat.casts.size()).is_equal(1)
+	assert_bool(scene.run.ability_ready()).is_false()
+	# Cooling down: the button does nothing.
+	scene.toggle_ability()
+	assert_bool(scene.aiming).is_false()
+
+
+func test_the_ability_button_hides_between_waves() -> void:
+	scene.sync_views()
+	assert_bool(scene.ability_button.visible).is_false()
+
+
+func test_every_ability_is_cast_and_lands_in_the_scene() -> void:
+	for a: AbilityDef in scene.base_config.abilities:
+		scene.start_run(4242)
+		assert_bool(scene.run.choose_ability(a)).is_true()
+		scene.start_wave()
+		_tick_until(func() -> bool: return scene.run.combat.enemy_count() >= 3)
+		var target: Vector2 = scene.run.combat.path_enemies.filter(
+				func(g: Array) -> bool: return not g.is_empty())[0][0].pos()
+		scene.toggle_ability()
+		if a.targeted():
+			assert_bool(scene.aiming).override_failure_message(String(a.id)).is_true()
+			scene.handle_pointer(_press(_screen(target)))
+		assert_bool(scene.aiming).is_false()
+		assert_bool(scene.run.ability_ready()).override_failure_message(String(a.id)).is_false()
+		var landed: Array = [false]
+		scene.run.combat.ability_landed.connect(func(_c: CombatSim.Cast) -> void: landed[0] = true)
+		scene.tick(roundi((a.delay + 0.1) * scene.config.tick_rate))
+		scene.sync_views(0.1)
+		assert_bool(landed[0]).override_failure_message("%s never landed" % a.id).is_true()
+
+
+func test_a_hand_played_run_opens_with_the_pick_and_teaches_the_pick_once() -> void:
+	var seen: Dictionary = {}
+	scene.enable_tips(seen)
+	scene.offer_pick = true
+	scene.start_run(4242)
+	assert_bool(scene.ability_picker.visible).is_true()
+	assert_bool(scene.build_bar.visible).is_false()
+	assert_object(scene.ability_picker.selected).is_same(scene.run.ability)
+	scene.pump_tips()
+	assert_bool(scene.tip_layer.is_active()).is_false()  # the pick comes first
+	assert_bool(scene.ability_picker.pick(&"cryo_bomb")).is_true()
+	assert_str(String(scene.run.ability.id)).is_equal("cryo_bomb")
+	assert_bool(scene.ability_picker.visible).is_false()
+	assert_bool(scene.build_bar.visible).is_true()
+	scene.pump_tips()
+	assert_str(scene.tip_layer.current.key()).is_equal("ability_intro:cryo_bomb")
+	assert_int(scene.tip_layer.pages.size()).is_equal(2)
+	assert_str(scene.tip_layer.pages[0].clip).is_equal(scene.run.ability.clip)
+	scene.tip_layer.advance()
+	scene.tip_layer.advance()
+	assert_bool(seen.has("ability_intro:cryo_bomb")).is_true()
+	# The next run offers it again, but it isn't taught twice.
+	scene.start_run(4243)
+	scene.ability_picker.pick(&"cryo_bomb")
+	scene.pump_tips()
+	var current: String = scene.tip_layer.current.key() if scene.tip_layer.is_active() else ""
+	assert_str(current).is_not_equal("ability_intro:cryo_bomb")
+
+
+## Regression (2026-09-29): the "How to use it" card's wrapping line had no width, so the card
+## grew taller than the screen and looked like a black screen needing an extra tap.
+func test_every_special_attack_tutorial_card_fits_on_screen() -> void:
+	var view: float = scene.get_viewport_rect().size.y
+	for a: AbilityDef in scene.base_config.abilities:
+		var pages: Array[TipLayer.Page] = RunController.ability_pages(a)
+		scene.tip_layer.show_tip(TipDirector.Pending.new(TipDef.new(), a.id), pages)
+		for i: int in pages.size():
+			assert_float(scene.tip_layer.card_height()).override_failure_message(
+					"%s card %d is %d tall" % [a.id, i, scene.tip_layer.card_height()]) \
+					.is_less(view * 0.6)
+			if i + 1 < pages.size():
+				scene.tip_layer.advance()
+		scene.tip_layer.current = null
+
+
+func test_two_units_in_range_link_and_the_card_lists_it() -> void:
+	scene.run.gold = 999
+	var a: int = -1
+	var b: int = -1
+	for p: CombatSim.Plot in scene.run.plots:
+		for q: CombatSim.Plot in scene.run.plots:
+			if a < 0 and p.index < q.index and scene.run.plot_open(p.index) \
+					and scene.run.plot_open(q.index) \
+					and p.position.distance_to(q.position) <= scene.config.synergy_range:
+				a = p.index
+				b = q.index
+	assert_int(a).is_greater_equal(0)
+	scene.enable_tips({})
+	for key: String in ["new_enemy:grunt", "new_enemy:runner", "first_build", "start_wave"]:
+		scene.tips.seen[key] = true
+	scene.tips.clear_queue()
+	assert_bool(scene.run.build(a, &"mortar")).is_true()
+	assert_bool(scene.run.build(b, &"rail")).is_true()
+	assert_bool(scene.run.plots[a].links.is_empty()).is_false()
+	scene.open_plot(a)
+	scene.build_menu.sync(scene.run)
+	assert_bool(scene.build_menu._links.visible).is_true()
+	assert_str(scene.build_menu._links.text).contains("Siege Battery")
+	scene.build_menu.close()
+	# The first link teaches itself.
+	var found: bool = false
+	for i: int in 6:
+		scene.pump_tips()
+		if not scene.tip_layer.is_active():
+			break
+		if scene.tip_layer.current.def.id == &"synergy":
+			found = true
+			break
+		scene.tip_layer.advance()
+	assert_bool(found).is_true()

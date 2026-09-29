@@ -1,0 +1,60 @@
+[gd_resource type="Resource" script_class="MapDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/map_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/path_def.gd" id="path_s"]
+[ext_resource type="Script" path="res://src/defs/zone_def.gd" id="zone_s"]
+[ext_resource type="Script" path="res://src/defs/wave_def.gd" id="t_w"]
+[ext_resource type="Resource" path="res://data/waves/switchback_01.tres" id="w1"]
+[ext_resource type="Resource" path="res://data/waves/switchback_02.tres" id="w2"]
+[ext_resource type="Resource" path="res://data/waves/switchback_03.tres" id="w3"]
+[ext_resource type="Resource" path="res://data/waves/switchback_04.tres" id="w4"]
+[ext_resource type="Resource" path="res://data/waves/switchback_05.tres" id="w5"]
+[ext_resource type="Resource" path="res://data/waves/switchback_06.tres" id="w6"]
+[ext_resource type="Resource" path="res://data/waves/switchback_07.tres" id="w7"]
+[ext_resource type="Resource" path="res://data/waves/switchback_08.tres" id="w8"]
+[ext_resource type="Resource" path="res://data/waves/switchback_09.tres" id="w9"]
+[ext_resource type="Resource" path="res://data/waves/switchback_10.tres" id="w10"]
+
+[sub_resource type="Resource" id="path_0"]
+script = ExtResource("path_s")
+points = PackedVector2Array(440, -10, 440, 70, 100, 250, 100, 320, 440, 500, 440, 560, 270, 700, 270, 860)
+spread = 30.0
+opens_at_wave = 1
+
+[sub_resource type="Resource" id="path_1"]
+script = ExtResource("path_s")
+points = PackedVector2Array(440, -10, 440, 70, 100, 250, 100, 320, 100, 860)
+spread = 30.0
+opens_at_wave = 3
+
+[sub_resource type="Resource" id="path_2"]
+script = ExtResource("path_s")
+points = PackedVector2Array(550, 610, 470, 680, 470, 860)
+spread = 30.0
+opens_at_wave = 6
+
+[sub_resource type="Resource" id="zone_mud"]
+script = ExtResource("zone_s")
+kind = 0
+center = Vector2(270, 410)
+radius = 55.0
+value = 0.6
+
+[sub_resource type="Resource" id="zone_ridge"]
+script = ExtResource("zone_s")
+kind = 1
+center = Vector2(300, 290)
+radius = 32.0
+value = 0.25
+
+[resource]
+script = ExtResource("1_s")
+id = &"switchback"
+biome = &"tundra"
+display_name = "Switchback Ridge"
+paths = Array[ExtResource("path_s")]([SubResource("path_0"), SubResource("path_1"), SubResource("path_2")])
+plots = PackedVector2Array(150, 110, 500, 220, 300, 290, 400, 300, 230, 480, 500, 420, 30, 420, 190, 620, 360, 760, 180, 770, 100, 876, 270, 876, 470, 876)
+plot_unlock_waves = PackedInt32Array(1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 6)
+barricade_slots = PackedVector2Array(270, 770, 100, 770, 470, 770)
+zones = Array[ExtResource("zone_s")]([SubResource("zone_mud"), SubResource("zone_ridge")])
+waves = Array[ExtResource("t_w")]([ExtResource("w1"), ExtResource("w2"), ExtResource("w3"), ExtResource("w4"), ExtResource("w5"), ExtResource("w6"), ExtResource("w7"), ExtResource("w8"), ExtResource("w9"), ExtResource("w10")])

@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_s")
 id = &"brute"
-description = "Armoured and slow: small rounds bounce off and blasts glance. Snipers and rails punch through its vent."
+description = "Armoured and slow. Small rounds bounce off; heavy shots punch through."
 display_name = "Carapace"
 hp = 55.0
 speed = 20.0

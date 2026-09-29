@@ -17,6 +17,10 @@ extends Resource
 ## passing through the slot.
 @export var barricade_slots: PackedVector2Array = PackedVector2Array()
 @export var zones: Array[ZoneDef] = []
+## The look of its ground (the art generator's palette, tools/src/gf_tools/art/terrain.py
+## BIOMES): "desert", "canyon", "tundra"; unknown or empty paints the neutral dusk look.
+## Only the generator reads it; the game shows whatever ground was painted.
+@export var biome: StringName = &""
 ## This map's waves (a run on it plays these; RunConfig.for_map).
 @export var waves: Array[WaveDef] = []
 

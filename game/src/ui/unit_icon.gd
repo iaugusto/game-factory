@@ -22,7 +22,6 @@ func _draw() -> void:
 	var c: Vector2 = size / 2.0
 	var s: float = minf(size.x, size.y) / 60.0
 	var tint := Color(0.45, 0.45, 0.45) if dimmed else Color.WHITE
-	var base: String = "units/base_troop" if unit.role == UnitDef.Role.TROOP \
-			else "units/base_emplacement"
+	var base: String = "units/base_%s" % unit.id
 	Art.draw(self, base, c, 0.0, s, tint)
 	Art.draw(self, "units/%s" % unit.id, c, 0.0, s, tint)

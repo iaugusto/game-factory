@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_s")
 id = &"boss"
-description = "The Hive Queen. One strike breaks any gate. Only piercing rounds get through her hide."
+description = "The Hive Queen. One strike breaks any gate. Only piercing rounds hurt her."
 display_name = "Hive Queen"
 hp = 250.0
 speed = 11.0

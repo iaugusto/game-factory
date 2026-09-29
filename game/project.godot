@@ -12,12 +12,13 @@ config_version=5
 
 config/name="Hold the Gate"
 config/description="Prototype: lane defense with fixed units on build spots (the wall included) and tap-to-break loot crates."
-run/main_scene="res://scenes/run.tscn"
+run/main_scene="res://scenes/campaign.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 
 [autoload]
 
 Services="*res://src/platform/services_registry.gd"
+Session="*res://src/ui/session.gd"
 
 [debug]
 
@@ -39,9 +40,16 @@ platform/provider="stub"
 
 enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
 
+[importer_defaults]
+
+texture={
+"mipmaps/generate": true
+}
+
 [rendering]
 
 environment/defaults/default_clear_color=Color(0.0784, 0.098, 0.133, 1)
 
 renderer/rendering_method="mobile"
+textures/canvas_textures/default_texture_filter=3
 textures/vram_compression/import_etc2_astc=true

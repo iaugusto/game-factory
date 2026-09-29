@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"bombardier"
+display_name = "Bombardier"
+description = "Stops short of the gate and lobs acid at it. Snipers reach it first."
+hp = 30.0
+speed = 24.0
+wall_damage = 6.0
+attack_interval = 2.5
+gold = 4
+radius = 16.0
+color = Color(0.5961, 0.8, 0.2, 1)
+weak_to = 4
+resists = 1
+armor = 1.0
+threat = 7.0
+siege_range = 200.0
+lob_time = 0.9

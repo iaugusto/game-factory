@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"burrower"
+display_name = "Burrower"
+description = "Tunnels under your fire and the barricade. Frost holds it on the surface."
+hp = 24.0
+speed = 36.0
+wall_damage = 6.0
+gold = 3
+radius = 14.0
+color = Color(0.6588, 0.4706, 0.2824, 1)
+weak_to = 8
+resists = 2
+armor = 0.0
+threat = 4.0
+burrow_every = 3.0
+burrow_length = 140.0

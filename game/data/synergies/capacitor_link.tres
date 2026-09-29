@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="SynergyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/synergy_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/stat_bonus.gd" id="2_b"]
+
+[sub_resource type="Resource" id="Bonus_a"]
+script = ExtResource("2_b")
+
+[sub_resource type="Resource" id="Bonus_b"]
+script = ExtResource("2_b")
+beam_targets = 2
+
+[resource]
+script = ExtResource("1_s")
+id = &"capacitor_link"
+title = "Capacitor Link"
+description = "The Rail Cannon's beam hits 2 more targets."
+unit_a = &"mg"
+unit_b = &"rail"
+bonus_a = SubResource("Bonus_a")
+bonus_b = SubResource("Bonus_b")

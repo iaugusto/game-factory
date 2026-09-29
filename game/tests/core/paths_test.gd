@@ -20,6 +20,18 @@ func test_path_geometry() -> void:
 	assert_vector(g.normal_at(10.0)).is_equal_approx(Vector2(-1, 0), Vector2.ONE * 0.01)
 
 
+func test_a_stretch_of_path_keeps_its_bends() -> void:
+	var g := PathGeo.new(PackedVector2Array([Vector2(0, 0), Vector2(0, 100), Vector2(100, 200)]))
+	var s: PackedVector2Array = g.stretch(50.0, 100.0 + sqrt(20000.0) / 2.0)
+	assert_int(s.size()).is_equal(3)
+	assert_vector(s[0]).is_equal_approx(Vector2(0, 50), Vector2.ONE * 0.01)
+	assert_vector(s[1]).is_equal(Vector2(0, 100))
+	assert_vector(s[2]).is_equal_approx(Vector2(50, 150), Vector2.ONE * 0.01)
+	assert_int(g.stretch(10.0, 20.0).size()).is_equal(2)  # no bend inside
+	assert_float(PathGeo.distance_to_polyline(s, Vector2(10, 80))).is_equal_approx(10.0, 0.01)
+	assert_float(PathGeo.distance_to_polyline(s, Vector2(0, 0))).is_equal_approx(50.0, 0.01)
+
+
 # --- a bent, merging map ----------------------------------------------------------------------
 
 ## Two paths that bend inward and merge into one trunk at (270, 500), and a short flank path

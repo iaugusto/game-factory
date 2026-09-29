@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/skill_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"drill"
+title = "Drill Instructors"
+description = "Units reload 8% faster."
+branch = 0
+tier = 1
+cost = 1
+key = &"unit_rate_bonus"
+value = 0.08

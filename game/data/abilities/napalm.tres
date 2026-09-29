@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="AbilityDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/ability_def.gd" id="1_a"]
+
+[resource]
+script = ExtResource("1_a")
+id = &"napalm"
+display_name = "Napalm Line"
+short_name = "NAPALM"
+description = "Sets a stretch of the road on fire: whatever walks down it burns."
+icon = "ui/ability_napalm"
+clip = "res://clips/napalm.ogv"
+kind = 2
+unlocked_by = &"outpost"
+cooldown = 35.0
+delay = 0.7
+damage = 5.0
+duration = 6.0
+length = 90.0

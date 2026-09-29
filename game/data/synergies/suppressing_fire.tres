@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SynergyDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/synergy_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/stat_bonus.gd" id="2_b"]
+
+[sub_resource type="Resource" id="Bonus_a"]
+script = ExtResource("2_b")
+reload = 0.15
+
+[sub_resource type="Resource" id="Bonus_b"]
+script = ExtResource("2_b")
+reload = 0.15
+
+[resource]
+script = ExtResource("1_s")
+id = &"suppressing_fire"
+title = "Suppressing Fire"
+description = "Both fire 15% faster."
+unit_a = &"rifleman"
+unit_b = &"mg"
+bonus_a = SubResource("Bonus_a")
+bonus_b = SubResource("Bonus_b")

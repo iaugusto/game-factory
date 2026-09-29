@@ -15,6 +15,7 @@ const TURN_SPEED: float = 10.0
 
 var plot: CombatSim.Plot
 var _built_id: StringName = &""
+var _built_level: int = 0
 var _angle: float = 0.0
 var _recoil: float = 0.0
 var _flash: float = 0.0
@@ -59,10 +60,15 @@ func sync(sim: CombatSim, delta: float) -> void:
 	_t += delta
 	if plot.is_empty():
 		_built_id = &""
+		_built_level = 0
 	elif plot.def.id != _built_id:
 		_built_id = plot.def.id
+		_built_level = plot.level
 		_pop = 1.0
 		_angle = 0.0
+	elif plot.level > _built_level:
+		_built_level = plot.level
+		_pop = 1.0  # an upgrade pops like a build
 	if not plot.is_empty():
 		if plot.target != null or plot.aim != Vector2.ZERO:
 			var want: float = (plot.aim - plot.position).angle() + PI / 2.0
@@ -96,9 +102,9 @@ func _draw() -> void:
 		draw_arc(Vector2(0, -3), 5, PI, TAU, 12, Color(0.75, 0.72, 0.65), 2.5)
 		var font: Font = ThemeDB.fallback_font
 		var text: String = "W%d" % plot.unlock_wave
-		draw_string_outline(font, Vector2(-11, 28), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4,
+		draw_string_outline(font, Vector2(-11, 28), text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.look.caption, 4,
 				Color(0, 0, 0, 0.9))
-		draw_string(font, Vector2(-11, 28), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
+		draw_string(font, Vector2(-11, 28), text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.look.caption,
 				Color(0.85, 0.82, 0.75))
 		return
 	if plot.is_empty():
@@ -111,8 +117,7 @@ func _draw() -> void:
 	if _selected:
 		draw_circle(Vector2.ZERO, _reach, Color(0.25, 0.9, 0.8, 0.08))
 		draw_arc(Vector2.ZERO, _reach, 0, TAU, 96, Color(0.25, 0.9, 0.8, 0.7), 2.0)
-	var base: String = "units/base_troop" if plot.def.role == UnitDef.Role.TROOP \
-			else "units/base_emplacement"
+	var base: String = "units/base_%s" % plot.def.id  # painted in its damage type's colour
 	var tint: Color = Color(0.55, 0.62, 0.5) if _disabled > 0.0 else Color.WHITE
 	Art.draw(self, base, Vector2.ZERO, 0.0, s, tint)
 	if _reload >= RING_MIN_RELOAD:

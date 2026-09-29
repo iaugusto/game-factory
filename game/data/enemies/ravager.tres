@@ -6,7 +6,7 @@
 script = ExtResource("1_s")
 id = &"ravager"
 display_name = "Ravager"
-description = "Hunts your units: it stops at the first pad beside its path and tears the unit apart. MG fire shreds it; frost barely slows it."
+description = "Hunts your units: stops at the nearest pad and tears the unit apart."
 hp = 30.0
 speed = 40.0
 wall_damage = 8.0

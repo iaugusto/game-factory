@@ -4,7 +4,11 @@ A unit is drawn as a static base plus a head that turns toward its target, so ev
 points up (-y) with its pivot at the centre of its box, and the game rotates it. Troops
 (Rifleman, Sniper) sit in a sandbag ring; emplacements (MG, Cryo, Mortar, Rail) on a steel
 hex platform. Cool steel and olive with one accent colour each, so the defenders never blend
-into the warm swarm.
+into the warm swarm. The accent is the unit's damage type (palette KINETIC/EXPLOSIVE/PIERCING/
+CRYO_TYPE, the same as the ui/dmg_* icons), so a unit's colour says what it counters.
+
+Heads are drawn in a HEAD box and scaled by HEAD_ZOOM, so they read at phone size over a base
+that stays the size of its build spot.
 """
 
 from __future__ import annotations
@@ -16,6 +20,7 @@ from .svg import Svg, ellipse_points, polar, smooth_path
 
 BASE = 56.0
 HEAD = 64.0
+HEAD_ZOOM = 1.1
 
 
 def _metal(s: Svg, light: str = P.STEEL_LIGHT, mid: str = P.STEEL, dark: str = P.STEEL_DARK) -> str:
@@ -27,8 +32,12 @@ def _bolt(s: Svg, x: float, y: float, r: float = 1.1) -> None:
     s.circle(x - r * 0.3, y - r * 0.3, r * 0.4, fill=P.STEEL_LIGHT)
 
 
-def _sandbag(s: Svg, x: float, y: float, deg: float, w: float = 9.0, h: float = 5.2) -> None:
-    fill = s.radial([(0, P.SAND_LIGHT, 1), (0.6, P.SAND, 1), (1, P.SAND_DARK, 1)], cx=0.4, cy=0.35)
+def _sandbag(s: Svg, x: float, y: float, deg: float, w: float = 9.0, h: float = 5.2,
+             dye: str | None = None) -> None:
+    """One sandbag; `dye` colours its cloth (the unit's damage-type accent)."""
+    fill = (s.radial([(0, "#ffffff", 1), (0.35, dye, 1), (1, P.INK, 1)], cx=0.4, cy=0.35, r=0.9)
+            if dye else
+            s.radial([(0, P.SAND_LIGHT, 1), (0.6, P.SAND, 1), (1, P.SAND_DARK, 1)], cx=0.4, cy=0.35))
     with s.group(f"translate({x},{y}) rotate({deg})"):
         s.outlined(smooth_path(ellipse_points(0, 0, w / 2, h / 2, 10, jitter=[0, 0.05, -0.03])),
                    fill, P.INK, 0.6)
@@ -38,8 +47,9 @@ def _sandbag(s: Svg, x: float, y: float, deg: float, w: float = 9.0, h: float = 
 
 # --- bases ------------------------------------------------------------------------------
 
-def base_troop() -> Svg:
-    """A dug-in position: a dirt floor ringed by sandbags."""
+def base_troop(accent: str | None = None) -> Svg:
+    """A dug-in position: a dirt floor ringed by sandbags; with an `accent`, the bags at the
+    back are dyed in it."""
     s = Svg(BASE, BASE)
     c = BASE / 2
     s.soft_shadow(c + 2, c + 3, 26, 25, 0.5)
@@ -48,7 +58,7 @@ def base_troop() -> Svg:
     for i in range(14):
         a = i * 360 / 14
         x, y = polar(c, c, 21.5, a)
-        _sandbag(s, x, y, a + 90)
+        _sandbag(s, x, y, a + 90, dye=accent if accent and 2 <= i <= 5 else None)
     for i in range(7):  # an inner staggered row on the front arc
         a = 200 + i * 20
         x, y = polar(c, c, 17, a)
@@ -56,8 +66,8 @@ def base_troop() -> Svg:
     return s
 
 
-def base_emplacement() -> Svg:
-    """A bolted steel hex platform with hazard-striped corners."""
+def base_emplacement(accent: str = P.HAZARD) -> Svg:
+    """A bolted steel hex platform with its corners painted in `accent`."""
     s = Svg(BASE, BASE)
     c = BASE / 2
     s.soft_shadow(c + 2, c + 3, 27, 25, 0.5)
@@ -67,15 +77,15 @@ def base_emplacement() -> Svg:
     s.path("M" + " L".join(f"{x},{y}" for x, y in inner) + " Z",
            fill=s.linear([(0, P.STEEL_DARK, 1), (1, P.GUNMETAL, 1)]), stroke=P.STEEL_INK,
            stroke_width=0.8)
-    # hazard ticks on alternate corners
-    for i in (0, 2, 4):
+    # painted corners
+    for i in range(6):
         a = 30 + i * 60
         p1 = polar(c, c, 24.2, a - 9)
         p2 = polar(c, c, 24.2, a + 9)
         p3 = polar(c, c, 20, a + 7)
         p4 = polar(c, c, 20, a - 7)
         s.path(f"M{p1[0]},{p1[1]} L{p2[0]},{p2[1]} L{p3[0]},{p3[1]} L{p4[0]},{p4[1]} Z",
-               fill=P.HAZARD, stroke=P.STEEL_INK, stroke_width=0.5)
+               fill=accent, stroke=P.STEEL_INK, stroke_width=0.5)
     for i in range(6):
         x, y = polar(c, c, 22, i * 60)
         _bolt(s, x, y)
@@ -115,8 +125,13 @@ def head_rifleman() -> Svg:
     s.limb([(c + 7, c + 2), (c + 3.5, c - 2)], P.OLIVE, P.INK, 2.6)
     _gun(s, c + 1.5, c + 1, c - 17, 2.2)
     s.rect(c + 0.7, c - 19, 1.6, 3, fill=P.STEEL_LIGHT)  # muzzle
+    for sgn in (-1, 1):  # brass ammo pouches on the shoulders
+        s.rect(c + sgn * 7 - 2, c + 1.5, 4, 3.4, rx=0.8, fill=P.KINETIC, stroke=P.INK,
+               stroke_width=0.6)
     _soldier(s, c, c + 1.5, (P.OLIVE_LIGHT, P.OLIVE, P.OLIVE_DARK))
-    return s
+    s.path(f"M{c - 5.2},{c + 2.4} Q{c},{c + 5.6} {c + 5.2},{c + 2.4}", fill="none",
+           stroke=P.KINETIC, stroke_width=1.6)  # helmet band
+    return s.zoomed(HEAD_ZOOM)
 
 
 def head_sniper() -> Svg:
@@ -133,15 +148,18 @@ def head_sniper() -> Svg:
     # the long rifle with scope and bipod
     _gun(s, c, c + 2, c - 29, 2.0)
     s.rect(c - 1.9, c - 13, 3.8, 7, rx=1.6, fill=P.STEEL_DARK, stroke=P.STEEL_INK, stroke_width=0.5)
-    s.circle(c, c - 13.2, 1.2, fill=P.CRYO, opacity=0.9)
+    s.glow(c, c - 13.2, 4, P.PIERCING, 0.7)
+    s.circle(c, c - 13.2, 1.5, fill=P.PIERCING)
     s.limb([(c, c - 22), (c - 4, c - 19)], P.GUNMETAL, P.INK, 0.9)
     s.limb([(c, c - 22), (c + 4, c - 19)], P.GUNMETAL, P.INK, 0.9)
     s.limb([(c - 5, c + 1), (c - 1.5, c - 5)], P.OLIVE, P.INK, 2.4)
     s.limb([(c + 5, c + 1), (c + 1.5, c - 3)], P.OLIVE, P.INK, 2.4)
     s.circle(c, c - 1, 5, fill=s.radial([(0, P.OLIVE_LIGHT, 1), (0.6, P.OLIVE, 1),
              (1, P.OLIVE_DARK, 1)], cx=0.35, cy=0.3), stroke=P.INK, stroke_width=0.9)
+    s.path(f"M{c - 4.6},{c + 0.6} Q{c},{c + 3.8} {c + 4.6},{c + 0.6}", fill="none",
+           stroke=P.PIERCING, stroke_width=1.6)  # helmet band
     s.circle(c - 1.6, c - 2.6, 1.2, fill="#ffffff", opacity=0.35)
-    return s
+    return s.zoomed(HEAD_ZOOM)
 
 
 def head_mg() -> Svg:
@@ -158,6 +176,8 @@ def head_mg() -> Svg:
     # curved gun shield
     s.outlined(f"M{c - 12},{c - 4} Q{c},{c - 11} {c + 12},{c - 4} L{c + 11},{c - 1} "
                f"Q{c},{c - 7} {c - 11},{c - 1} Z", _metal(s), P.STEEL_INK, 0.8)
+    s.path(f"M{c - 11.2},{c - 3.2} Q{c},{c - 9.8} {c + 11.2},{c - 3.2}", fill="none",
+           stroke=P.KINETIC, stroke_width=1.5)
     # housing
     s.outlined(f"M{c - 8},{c - 3} L{c + 8},{c - 3} L{c + 9},{c + 9} Q{c},{c + 13} {c - 9},{c + 9} Z",
                _metal(s), P.STEEL_INK, 1.0)
@@ -169,8 +189,8 @@ def head_mg() -> Svg:
     s.path(f"M{c + 9},{c + 1} Q{c + 5},{c - 1} {c + 2.6},{c - 3}", fill="none", stroke=P.HAZARD,
            stroke_width=1.6, stroke_dasharray="1 0.6")
     s.rect(c - 3, c + 1, 6, 4, rx=1, fill=P.STEEL_DARK)
-    s.circle(c, c + 3, 1.2, fill=P.TEAL)
-    return s
+    s.circle(c, c + 3, 1.2, fill=P.KINETIC)
+    return s.zoomed(HEAD_ZOOM)
 
 
 def head_frost() -> Svg:
@@ -198,7 +218,7 @@ def head_frost() -> Svg:
     s.circle(c, c + 1, 4.5, fill=s.radial([(0, "#ffffff", 1), (0.5, P.CRYO, 1), (1, P.CRYO_DEEP, 1)]),
              stroke=P.STEEL_INK, stroke_width=0.6)
     s.circle(c - 3.2, c - 2.4, 2.2, fill="#ffffff", opacity=0.6)
-    return s
+    return s.zoomed(HEAD_ZOOM)
 
 
 def head_mortar() -> Svg:
@@ -216,7 +236,8 @@ def head_mortar() -> Svg:
     s.outlined(f"M{c - 4},{c + 6} L{c - 3.6},{c - 15} L{c + 3.6},{c - 15} L{c + 4},{c + 6} Z",
                s.linear([(0, P.OLIVE_DARK, 1), (0.35, P.OLIVE_LIGHT, 1), (1, P.OLIVE_DARK, 1)], 0, 0, 1, 0),
                P.INK, 0.8)
-    s.rect(c - 4.3, c - 6, 8.6, 1.6, fill=P.STEEL_DARK)
+    s.rect(c - 4.5, c - 7, 9, 2.6, fill=P.EXPLOSIVE, stroke=P.INK, stroke_width=0.5)
+    s.rect(c - 4.4, c - 12, 8.8, 1.8, fill=P.EXPLOSIVE, stroke=P.INK, stroke_width=0.5)
     s.ellipse(c, c - 15, 4.4, 2.2, fill=P.OLIVE_DARK, stroke=P.INK, stroke_width=0.8)
     s.ellipse(c, c - 15, 2.8, 1.3, fill="#0a0a0a")
     # shells ready at the side
@@ -224,7 +245,9 @@ def head_mortar() -> Svg:
         s.outlined(f"M{c + dx - 1.4},{c + 12} L{c + dx - 1.4},{c + 5} Q{c + dx},{c + 2} "
                    f"{c + dx + 1.4},{c + 5} L{c + dx + 1.4},{c + 12} Z",
                    s.linear([(0, P.SAND_LIGHT, 1), (1, P.SAND_DARK, 1)], 0, 0, 1, 0), P.INK, 0.4)
-    return s
+        s.path(f"M{c + dx - 1.4},{c + 5.4} Q{c + dx},{c + 2} {c + dx + 1.4},{c + 5.4} Z",
+               fill=P.EXPLOSIVE)  # warhead tip
+    return s.zoomed(HEAD_ZOOM)
 
 
 def head_rail() -> Svg:
@@ -253,7 +276,7 @@ def head_rail() -> Svg:
              stroke=P.STEEL_INK, stroke_width=0.6)
     for sgn in (-1, 1):
         _bolt(s, c + sgn * 7.5, c + 5)
-    return s
+    return s.zoomed(HEAD_ZOOM)
 
 
 def plot_pad() -> Svg:
@@ -277,9 +300,18 @@ def plot_pad() -> Svg:
     return s
 
 
+# unit id -> (base, damage-type accent): each unit gets its own base, painted in its accent.
+BASES = {
+    "rifleman": (base_troop, P.KINETIC),
+    "sniper": (base_troop, P.PIERCING),
+    "mg": (base_emplacement, P.KINETIC),
+    "frost": (base_emplacement, P.CRYO_TYPE),
+    "mortar": (base_emplacement, P.EXPLOSIVE),
+    "rail": (base_emplacement, P.PIERCING),
+}
+
 ASSETS = {
-    "units/base_troop": base_troop,
-    "units/base_emplacement": base_emplacement,
+    **{f"units/base_{uid}": (lambda f=f, a=a: f(a)) for uid, (f, a) in BASES.items()},
     "units/plot": plot_pad,
     "units/rifleman": head_rifleman,
     "units/sniper": head_sniper,

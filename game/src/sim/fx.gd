@@ -172,6 +172,15 @@ func acid_splash(pos: Vector2) -> void:
 		d.scl = _rng.randf_range(0.06, 0.12)
 
 
+## Earth thrown up where a Burrower dives or breaks the surface: a brown puff and clods.
+func dust(pos: Vector2) -> void:
+	flash("fx/glow", pos, 0.4, 1.1, Color(0.55, 0.4, 0.25, 0.6), 0.35)
+	for i: int in 8:
+		var d := _spawn("fx/shard", pos, _rng.randf_range(40, 110), 0.4)
+		d.color = Color(0.45, 0.32, 0.18, 1.0)
+		d.scl = _rng.randf_range(0.25, 0.45)
+
+
 ## A hitscan shot: a bright tracer line that fades fast.
 func tracer(a: Vector2, b: Vector2, color: Color) -> void:
 	_streak(a, b, color, 3.0, 0.12)
@@ -222,12 +231,12 @@ func flash(key: String, pos: Vector2, scl0: float, scl1: float, color: Color, li
 	_flashes.append(f)
 
 
-func popup(text: String, pos: Vector2, color: Color = Color.WHITE, font_size: int = 22,
+## Floating text at `pos` in text role `role` (UiTheme), rising `rise` px over `life` s.
+func popup(text: String, pos: Vector2, color: Color = Color.WHITE, role: StringName = &"label",
 		life: float = 0.8, rise: float = 50.0) -> void:
 	var label: Label = _free_label()
 	label.text = text
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", color)
+	UiTheme.restyle(label, role, color)
 	label.reset_size()
 	label.position = pos - label.size / 2.0
 	if bounds_width > 0.0:
@@ -365,8 +374,6 @@ func _free_label() -> Label:
 		if not _label_life.has(label):
 			return label
 	var label := Label.new()
-	label.add_theme_constant_override("outline_size", 6)
-	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	label.z_index = 10
 	add_child(label)
 	_labels.append(label)

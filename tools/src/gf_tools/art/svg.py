@@ -75,6 +75,14 @@ def ellipse_points(cx: float, cy: float, rx: float, ry: float, n: int = 16,
     return out
 
 
+# How many texture pixels per art unit. Sprites are rasterized at 4x: the game's 540-wide
+# view is shown at up to ~2.9x on 1440p phones and tablets, and 4x (with mipmaps for smaller
+# screens) keeps them sharp there. Full-screen art (grounds, the wall) stays at FIELD_RASTER,
+# since at 4x a ground alone would be ~30 MB of video memory.
+RASTER = 4.0
+FIELD_RASTER = 2.0
+
+
 @dataclass
 class Svg:
     """One SVG document. `w`/`h` are the viewBox (art units = game units); the document is
@@ -82,7 +90,7 @@ class Svg:
 
     w: float
     h: float
-    scale: float = 2.0
+    scale: float = RASTER
     defs: list[str] = field(default_factory=list)
     body: list[str] = field(default_factory=list)
     _ids: int = 0
@@ -190,6 +198,14 @@ class Svg:
             self.polyline([(x - off, y - off) for x, y in points], fill="none", stroke=highlight,
                           stroke_width=max(0.4, width * 0.3), stroke_linecap="round",
                           stroke_linejoin="round", opacity=0.7)
+
+    def zoomed(self, z: float) -> "Svg":
+        """Scale the finished drawing by `z` about its origin and grow its box to match: an
+        asset drawn at one size, shipped at another (the drawing code keeps its coordinates)."""
+        self.body = [f'<g transform="scale({_fmt(z)})">' + "".join(self.body) + "</g>"]
+        self.w *= z
+        self.h *= z
+        return self
 
     def render(self) -> str:
         return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{_fmt(self.w * self.scale)}" '

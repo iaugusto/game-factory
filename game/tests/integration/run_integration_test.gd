@@ -63,41 +63,30 @@ func test_shots_stay_inside_the_budget() -> void:
 	assert_int(_play(3)["peak_shots"]).is_less_equal(20 * _config().plot_count())
 
 
-func test_zero_meta_is_not_a_stroll() -> void:
-	# First-pass difficulty guard (B2 feedback: "not a stroll in the park"). The scripted bot
-	# at zero meta must not win every run, and must get somewhere.
+## Bot wins over seeds 1..8 on map `map_index` with tree profile `profile`; every run must end.
+func _wins(map_index: int, profile: String) -> int:
+	var mods: RunModifiers = BalanceRun.profile_mods(load(CONFIG_PATH), profile)
 	var wins: int = 0
-	var waves: Array[int] = []
 	for s: int in range(1, 9):
-		var run: Run = _play(s)["run"]
+		var run := Run.new(_config(map_index), s, mods)
+		Autoplay.new().play(run)
+		assert_bool(run.is_over()).is_true()
 		wins += 1 if run.phase == Run.Phase.WON else 0
-		waves.append(run.waves_cleared)
-	prints("zero-meta bot, 8 seeds: waves cleared %s, wins %d" % [waves, wins])
-	assert_int(wins).is_less(8)
-	assert_int(waves.max()).is_greater_equal(3)
+	return wins
 
 
-func test_the_canyon_is_harder_and_plays_to_the_end() -> void:
-	# Sector 2: merged paths, flank breaches at waves 4 and 7. Its choke makes the early waves
-	# gentler, so "harder" is measured where it bites: with a mid meta the bot wins fewer runs
-	# there than on the Outpost. At zero meta it never wins, and every run ends (no stuck waves).
-	var mid := RunModifiers.new()
-	mid.wall_hp_bonus = 60
-	mid.start_gold_bonus = 30
-	mid.unit_cost_discount = 0.16
-	mid.crate_reward_bonus = 0.2
-	mid.unit_rate_bonus = 0.1
-	var wins: Array[int] = [0, 0]
-	var zero: Array[int] = []
-	for s: int in range(1, 9):
-		for map_index: int in 2:
-			var run := Run.new(_config(map_index), s, mid)
-			Autoplay.new().play(run)
-			assert_bool(run.is_over()).is_true()
-			wins[map_index] += 1 if run.phase == Run.Phase.WON else 0
-		var z: Run = _play(s, Autoplay.new(), 1)["run"]
-		assert_int(z.phase).is_equal(Run.Phase.LOST)
-		zero.append(z.waves_cleared)
-	prints("mid-meta wins over 8 seeds: outpost %d, canyon %d; canyon zero-meta %s" % [wins[0],
-			wins[1], zero])
-	assert_int(wins[1]).is_less_equal(wins[0])
+func test_the_campaign_curve() -> void:
+	# The difficulty curve against the skill tree. Sector 1 is winnable with no tree but no
+	# stroll; sector 2 needs the stars sector 1 gives; sector 3 needs more; and on one map more
+	# tree never wins less.
+	var outpost_t0: int = _wins(0, "T0")
+	var canyon: Array[int] = [_wins(1, "T0"), _wins(1, "T3"), _wins(1, "T6")]
+	var switchback: Array[int] = [_wins(2, "T0"), _wins(2, "T6")]
+	prints("campaign curve, bot wins of 8: outpost T0 %d | canyon T0/T3/T6 %s | switchback T0/T6 %s"
+			% [outpost_t0, canyon, switchback])
+	assert_int(outpost_t0).is_between(1, 7)
+	assert_int(canyon[0]).is_less_equal(1)
+	assert_int(canyon[1]).is_greater_equal(1)
+	assert_bool(canyon[0] <= canyon[1] and canyon[1] <= canyon[2]).is_true()
+	assert_int(switchback[0]).is_less_equal(mini(1, outpost_t0))
+	assert_int(switchback[1]).is_greater_equal(maxi(1, switchback[0]))

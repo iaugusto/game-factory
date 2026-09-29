@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="AbilityDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/ability_def.gd" id="1_a"]
+
+[resource]
+script = ExtResource("1_a")
+id = &"cryo_bomb"
+display_name = "Cryo Bomb"
+short_name = "CRYO"
+description = "Freezes everything in the blast solid, then leaves it slowed."
+icon = "ui/ability_cryo_bomb"
+clip = "res://clips/cryo_bomb.ogv"
+kind = 1
+cooldown = 30.0
+delay = 0.6
+radius = 95.0
+duration = 4.0
+slow = 0.5
+slow_time = 3.0

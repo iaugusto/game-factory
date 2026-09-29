@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24">
+<defs><radialGradient id="rg1" gradientUnits="objectBoundingBox" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000000" stop-opacity="0.5"/><stop offset="0.55" stop-color="#000000" stop-opacity="0.3"/><stop offset="1" stop-color="#000000" stop-opacity="0"/></radialGradient><radialGradient id="rg2" gradientUnits="objectBoundingBox" cx="0.4" cy="0.35" r="0.5"><stop offset="0" stop-color="#86985a" stop-opacity="1"/><stop offset="1" stop-color="#39432a" stop-opacity="1"/></radialGradient><radialGradient id="rg3" gradientUnits="objectBoundingBox" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff3b2e" stop-opacity="0.6"/><stop offset="0.35" stop-color="#ff3b2e" stop-opacity="0.3"/><stop offset="1" stop-color="#ff3b2e" stop-opacity="0"/></radialGradient></defs>
+<ellipse cx="12.5" cy="13.5" rx="11" ry="9" fill="url(#rg1)"/>
+<circle cx="21.6" cy="12" r="1.7" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="16.8" cy="20.31" r="1.7" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="7.2" cy="20.31" r="1.7" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="2.4" cy="12" r="1.7" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="7.2" cy="3.69" r="1.7" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="16.8" cy="3.69" r="1.7" fill="#2c343c" stroke="#0c1116" stroke-width="0.6"/>
+<circle cx="12" cy="12" r="8.6" fill="url(#rg2)" stroke="#0c1116" stroke-width="1.1"/>
+<circle cx="12" cy="12" r="4.4" fill="#56626e" stroke="#0c1116" stroke-width="0.8"/>
+<circle cx="12" cy="12" r="1.7" fill="#ff3b2e"/>
+<circle cx="12" cy="12" r="4" fill="url(#rg3)"/>
+</svg>

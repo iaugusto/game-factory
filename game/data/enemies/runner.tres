@@ -5,16 +5,16 @@
 [resource]
 script = ExtResource("1_s")
 id = &"runner"
-description = "Fast and fragile, in packs. Hose it with MGs and rifles; sniper rounds are wasted on it."
+description = "Fast and fragile, always in packs."
 display_name = "Skitter"
 hp = 3.0
 speed = 105.0
-wall_damage = 3.0
+wall_damage = 4.0
 gold = 1
 radius = 10.0
 is_runner = true
 color = Color(0.7765, 0.8784, 0.2902, 1)
 weak_to = 1
-resists = 4
+resists = 6
 armor = 0.0
 threat = 0.6

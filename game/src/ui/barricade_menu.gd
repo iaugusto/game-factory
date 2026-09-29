@@ -24,17 +24,17 @@ func _init() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_card = PanelContainer.new()
-	_card.add_theme_stylebox_override("panel", UiTheme.panel(UiTheme.PANEL, 12,
-			Color(UiTheme.ACCENT, 0.35), 1))
+	_card.add_theme_stylebox_override("panel", UiTheme.panel(Color(0, 0, 0, 0), -1,
+			Color(UiTheme.look.title, 0.3), 1))
 	_card.custom_minimum_size = Vector2(220, 0)
 	_card.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_card)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	_card.add_child(box)
-	title = UiTheme.label("BARRICADE", 17, UiTheme.ACCENT, 4)
+	title = UiTheme.label("BARRICADE", &"label", UiTheme.look.title)
 	box.add_child(title)
-	info = UiTheme.label("", 13, UiTheme.TEXT_DIM, 3)
+	info = UiTheme.label("", &"caption", UiTheme.look.text_dim)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.custom_minimum_size = Vector2(196, 0)
 	box.add_child(info)
@@ -47,7 +47,7 @@ func _init() -> void:
 static func _button(box: Container, primary: bool, on_press: Callable) -> Button:
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(196, 42)
-	UiTheme.style_button(b, primary, 15)
+	UiTheme.style_button(b, primary, &"caption")
 	b.pressed.connect(on_press)
 	box.add_child(b)
 	return b

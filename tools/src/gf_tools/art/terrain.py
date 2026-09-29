@@ -5,6 +5,12 @@ A map is paths from portals to the gate, build plots and terrain zones
 art can never disagree with the rules: packed-dirt strips follow each path's centre line (merged
 paths blend into one trunk), burrows open where paths start, mud and ridges sit where their zones
 are, and decoration (rocks, scrub, crystals) keeps clear of paths and plots.
+
+Each map names a biome (MapDef.biome) that picks the palette (BIOMES): a desert outpost, a
+red-rock canyon, a frozen ridge, or the neutral dusk look. Lanes are sunken (a lit lip, then the
+left wall's shadow across the floor), and the swarm's creep stains the lane edges in sparse,
+faint patches that thin out toward the wall, so it tells the story without competing with the
+enemies (the user judged a dense creep at the top of the field too much).
 """
 
 from __future__ import annotations
@@ -13,11 +19,12 @@ import math
 import random
 import re
 from dataclasses import dataclass, field
+from typing import Callable
 from pathlib import Path
 
 from . import palette as P
 from .props import _crystal, _rock, _tuft
-from .svg import Svg, smooth_path
+from .svg import FIELD_RASTER, Svg, smooth_path
 
 FIELD_W = 540.0
 FIELD_H = 860.0
@@ -38,6 +45,7 @@ class Zone:
 @dataclass
 class MapShape:
     id: str
+    biome: str = ""
     paths: list[list[Point]] = field(default_factory=list)
     plots: list[Point] = field(default_factory=list)
     zones: list[Zone] = field(default_factory=list)
@@ -52,6 +60,8 @@ def load_map(path: Path) -> MapShape:
     """Parse the parts of a MapDef .tres the painter needs (paths, plots, zones)."""
     text = path.read_text(encoding="utf-8")
     shape = MapShape(re.search(r'^id = &"(\w+)"', text, re.M).group(1))
+    biome = re.search(r'^biome = &"(\w*)"', text, re.M)
+    shape.biome = biome.group(1) if biome else ""
     for block in re.split(r"\n(?=\[)", text):
         if 'script = ExtResource("path_s")' in block:
             shape.paths.append(_vec2s(re.search(r"points = PackedVector2Array\((.*)\)", block).group(1)))
@@ -102,57 +112,140 @@ def _sample(pts: list[Point], step: float) -> list[tuple[Point, Point]]:
     return smooth
 
 
+@dataclass(frozen=True)
+class Biome:
+    """A ground palette. Colours stay darker and less saturated than the sprites on top."""
+
+    bg: tuple[str, str, str]          # the base gradient, top to bottom
+    mottle: tuple[str, str, str]      # blotches over the base
+    strip: tuple[str, str, str]       # lane: edge (dark), floor, centre wear (light)
+    edge: str                         # the lane's outline
+    pebbles: tuple[str, str, str]
+    rock: tuple[str, str, str, str]   # light, mid, dark, rim (props._rock)
+    tufts: tuple[str, ...]
+    crystals: bool
+    haze: str                         # the dusk haze over the swarm's end
+    warm: float                       # the floodlight's warmth near the wall
+    mud: tuple[str, str]              # mud patch, puddle
+
+
+BIOMES: dict[str, Biome] = {
+    "dusk": Biome(("#1a1420", "#26201f", "#2b2520"), (P.VERGE, P.VERGE_LIGHT, "#1c1a18"),
+                  (P.DIRT_DARK, P.DIRT, P.DIRT_LIGHT), "#231b15", ("#8a7560", "#7a6650", "#a08a70"),
+                  (P.ROCK_LIGHT, P.ROCK, "#2a2724", "#8a8378"),
+                  ("#4f6a3a", "#5d7a40", "#3e5f55", "#6a5a7a"), True, P.HAZE, 0.10,
+                  ("#2a1f16", "#1b140e")),
+    "desert": Biome(("#3a2a22", "#5a4230", "#6a4e36"), ("#4e3a2a", "#6e5238", "#5a4432"),
+                    ("#4a3626", "#7a5e40", "#9a7a54"), "#3a2a1c", ("#b09070", "#9a7a5a", "#c8a882"),
+                    ("#a08466", "#7a624a", "#4a3a2c", "#c8b090"),
+                    ("#7a7a3a", "#8a8448", "#6a6a36", "#5e6a3a"), False, "#3a2030", 0.14,
+                    ("#3a2a1c", "#241a10")),
+    "canyon": Biome(("#2a1418", "#4a2420", "#5a2e24"), ("#5a2a20", "#6e3626", "#4a221c"),
+                    ("#3e2218", "#6a3e2a", "#8a5638"), "#2e1812", ("#a0624a", "#8a5240", "#b87858"),
+                    ("#b0664a", "#8a4632", "#4a2218", "#d08a6a"),
+                    ("#6a6a3a", "#7a6a3a", "#5a5a30", "#7a5a3a"), False, "#2a1030", 0.12,
+                    ("#2e1a12", "#1e100a")),
+    "tundra": Biome(("#1a2230", "#2a3440", "#34404c"), ("#2e3a46", "#3e4c58", "#26303a"),
+                    ("#2a2e34", "#4a4e54", "#6a6e74"), "#1e2228", ("#9aa6b0", "#8a96a0", "#c0cad2"),
+                    ("#8a96a2", "#5a6672", "#2a323a", "#c0ccd6"),
+                    ("#5a7a7a", "#6a8a8a", "#4a6a70", "#7a8a9a"), True, "#1a2440", 0.06,
+                    ("#1e242c", "#12161c")),
+}
+# The swarm's creep: stain, vein, pustule.
+CREEP = ("#5a1440", "#b0306a", "#ff7ab0")
+
+
+def _band(smp: list[tuple[Point, Point]], half: Callable[[int], float]) -> str:
+    """A closed band around a sampled path, `half(i)` wide at sample i."""
+    left, right = [], []
+    for i, ((x, y), (nx, ny)) in enumerate(smp):
+        h = half(i)
+        left.append((x + nx * h, y + ny * h))
+        right.append((x - nx * h, y - ny * h))
+    return smooth_path(left + right[::-1], tension=0.4)
+
+
+def _creep(s: Svg, rng: random.Random, samples: list[list[tuple[Point, Point]]],
+           burrows: list[Point]) -> None:
+    """Sparse, faint creep on the lane edges: most common near the burrows but reaching down
+    the field, never within 200 of the wall, never on the lane floor's centre."""
+    stain, vein, pus = CREEP
+    for cx, cy in burrows:  # a modest stain around each burrow
+        s.ellipse(cx, cy + 6, 52, 26, fill=s.radial([(0, stain, 0.6), (0.7, stain, 0.3), (1, stain, 0)]))
+    for smp in samples:
+        patches: list[Point] = []
+        for _ in range(max(6, len(smp) // 3)):
+            i = int(len(smp) * rng.random() ** 1.6)
+            (x, y), (nx, ny) = smp[min(i, len(smp) - 1)]
+            if y > FIELD_H - 200:
+                continue
+            side = rng.choice((-1, 1))
+            off = side * (STRIP + rng.uniform(-10, 16))
+            px, py = x + nx * off, y + ny * off
+            fade = 1.0 - py / (FIELD_H - 200)
+            r = rng.uniform(8, 18)
+            s.ellipse(px, py, r * 1.3, r * 0.8, fill=s.radial([(0, stain, 0.55 * fade + 0.25),
+                      (0.7, stain, 0.3 * fade + 0.1), (1, stain, 0)]))
+            patches.append((px, py))
+        for px, py in rng.sample(patches, min(4, len(patches))):  # a few thin veins
+            pts = [(px, py)]
+            for _ in range(rng.randint(2, 4)):
+                px += rng.uniform(-10, 10)
+                py += rng.uniform(14, 26)
+                pts.append((px, py))
+            s.path(smooth_path(pts, closed=False), fill="none", stroke=vein,
+                   stroke_width=rng.uniform(0.9, 1.5), opacity=0.5, stroke_linecap="round")
+        for px, py in rng.sample(patches, min(3, len(patches))):  # the odd pustule
+            r = rng.uniform(2.0, 3.4)
+            s.glow(px, py, r * 3, pus, 0.3)
+            s.circle(px, py, r, fill=s.radial([(0, "#ffd0e8", 1), (0.5, "#e0508a", 1), (1, stain, 1)],
+                     cx=0.4, cy=0.35), stroke="#2a0818", stroke_width=0.5, opacity=0.85)
+
+
 def ground_for(m: MapShape) -> Svg:
-    s = Svg(FIELD_W, FIELD_H)
+    b = BIOMES.get(m.biome, BIOMES["dusk"])
+    s = Svg(FIELD_W, FIELD_H, FIELD_RASTER)
     rng = random.Random(sum(ord(c) for c in m.id) * 7)
-    s.rect(0, 0, FIELD_W, FIELD_H, fill=s.linear([(0, "#1a1420", 1), (0.22, "#26201f", 1),
-           (1, "#2b2520", 1)]))
-    for _ in range(420):  # mottled ground texture
+    s.rect(0, 0, FIELD_W, FIELD_H, fill=s.linear([(0, b.bg[0], 1), (0.22, b.bg[1], 1), (1, b.bg[2], 1)]))
+    for _ in range(480):  # mottled ground texture
         x, y = rng.uniform(0, FIELD_W), rng.uniform(0, FIELD_H)
-        s.ellipse(x, y, rng.uniform(4, 16), rng.uniform(3, 10),
-                  fill=rng.choice([P.VERGE, P.VERGE_LIGHT, "#1c1a18"]), opacity=rng.uniform(0.25, 0.6))
+        s.ellipse(x, y, rng.uniform(4, 17), rng.uniform(3, 10.5), fill=rng.choice(b.mottle),
+                  opacity=rng.uniform(0.25, 0.6))
     for z in m.zones:  # ridges under everything else (a raised rocky shelf)
         if z.kind == 1:
             cx, cy = z.center
             s.circle(cx, cy + 4, z.radius + 10, fill="#15110e", opacity=0.6)
-            s.circle(cx, cy, z.radius + 8, fill=s.radial([(0, P.ROCK_LIGHT, 1), (0.7, P.ROCK, 1),
-                     (1, "#2e2a26", 1)], cx=0.4, cy=0.35), stroke="#1a1612", stroke_width=2)
+            s.circle(cx, cy, z.radius + 8, fill=s.radial([(0, b.rock[0], 1), (0.7, b.rock[1], 1),
+                     (1, b.rock[2], 1)], cx=0.4, cy=0.35), stroke="#1a1612", stroke_width=2)
             for i in range(14):
                 a = i / 14 * math.tau
                 _rock(s, rng, cx + math.cos(a) * (z.radius + 6), cy + math.sin(a) * (z.radius + 6),
-                      rng.uniform(3.5, 6))
+                      rng.uniform(3.5, 6), b.rock)
     samples = [_sample(pts, 14.0) for pts in m.paths]
-    for pi_, smp in enumerate(samples):  # dirt strips, edges first so merges blend
-        left, right = [], []
-        for i, ((x, y), (nx, ny)) in enumerate(smp):
-            half = STRIP + 6 * math.sin(i * 0.45 + pi_ * 2.1) + rng.uniform(-2.5, 2.5)
-            left.append((x + nx * half, y + ny * half))
-            right.append((x - nx * half, y - ny * half))
-        s.path(smooth_path(left + right[::-1], tension=0.4), fill=P.DIRT_DARK, stroke="#231b15",
-               stroke_width=6, opacity=0.9)
+    dark, floor, wear = b.strip
+    for pi_, smp in enumerate(samples):  # lane beds, edges first so merges blend
+        wob = [STRIP + 6 * math.sin(i * 0.45 + pi_ * 2.1) + rng.uniform(-2.5, 2.5) for i in range(len(smp))]
+        s.path(_band(smp, lambda i: wob[i] + 7), fill=b.pebbles[2], opacity=0.28)  # the lit lip
+        s.path(_band(smp, lambda i: wob[i]), fill=dark, stroke=b.edge, stroke_width=6, opacity=0.95)
     for smp in samples:
-        left, right = [], []
-        for (x, y), (nx, ny) in smp:
-            left.append((x + nx * (STRIP - 8), y + ny * (STRIP - 8)))
-            right.append((x - nx * (STRIP - 8), y - ny * (STRIP - 8)))
-        s.path(smooth_path(left + right[::-1], tension=0.4), fill=P.DIRT, opacity=0.95)
-        left, right = [], []
-        for (x, y), (nx, ny) in smp:
-            left.append((x + nx * 22, y + ny * 22))
-            right.append((x - nx * 22, y - ny * 22))
-        s.path(smooth_path(left + right[::-1], tension=0.4), fill=P.DIRT_LIGHT, opacity=0.35)
+        s.path(_band(smp, lambda i: STRIP - 8), fill=floor, opacity=0.95)
+        s.path(_band(smp, lambda i: 22), fill=wear, opacity=0.35)
+        # the left wall's shadow across the floor (light from the upper left)
+        pts = [(x + nx * (STRIP - 8), y + ny * (STRIP - 8)) for (x, y), (nx, ny) in smp]
+        pts += [(x + nx * (STRIP - 24), y + ny * (STRIP - 24)) for (x, y), (nx, ny) in reversed(smp)]
+        s.path(smooth_path(pts, tension=0.4), fill="#000000", opacity=0.22)
     for smp in samples:  # clods, pebbles and claw tracks along each path
         for _ in range(len(smp) * 3):
             (x, y), (nx, ny) = smp[rng.randrange(len(smp))]
             o = rng.gauss(0, 24)
             x, y = x + nx * o, y + ny * o
             if rng.random() < 0.55:
-                s.ellipse(x, y, rng.uniform(1.5, 5), rng.uniform(1, 3.2),
-                          fill=rng.choice([P.DIRT_DARK, "#5c4834", P.DIRT_LIGHT]), opacity=rng.uniform(0.35, 0.8))
+                s.ellipse(x, y, rng.uniform(1.5, 5), rng.uniform(1, 3.2), fill=rng.choice(b.strip),
+                          opacity=rng.uniform(0.35, 0.8))
             else:
                 r = rng.uniform(0.8, 1.9)
                 s.circle(x + 0.5, y + 0.6, r, fill="#1a140f", opacity=0.6)
-                s.circle(x, y, r, fill=rng.choice(["#8a7560", "#7a6650", "#a08a70"]))
+                s.circle(x, y, r, fill=rng.choice(b.pebbles))
         for track in (-22, 0, 20):
             i = rng.randrange(2)
             while i < len(smp) - 1:
@@ -164,17 +257,17 @@ def ground_for(m: MapShape) -> Svg:
                 x, y = x + nx * (track + rng.uniform(-5, 5)), y + ny * (track + rng.uniform(-5, 5))
                 for k in (-2.2, 0, 2.2):
                     s.line((x + nx * k, y + ny * k), (x + nx * k * 1.4 + tx * 5, y + ny * k * 1.4 + ty * 5),
-                           stroke="#2a2018", stroke_width=0.9, opacity=0.55, stroke_linecap="round")
+                           stroke=b.edge, stroke_width=0.9, opacity=0.55, stroke_linecap="round")
                 i += rng.randint(1, 2)
     for z in m.zones:  # mud: a dark wet patch with glossy puddles
         if z.kind == 0:
             cx, cy = z.center
-            s.ellipse(cx, cy, z.radius, z.radius * 0.85, fill=s.radial([(0, "#2a1f16", 0.95),
-                      (0.75, "#33271c", 0.85), (1, "#33271c", 0)]))
+            s.ellipse(cx, cy, z.radius, z.radius * 0.85, fill=s.radial([(0, b.mud[0], 0.95),
+                      (0.75, b.mud[0], 0.85), (1, b.mud[0], 0)]))
             for _ in range(9):
                 a, r = rng.uniform(0, math.tau), rng.uniform(0, z.radius * 0.6)
                 x, y = cx + math.cos(a) * r, cy + math.sin(a) * r * 0.85
-                s.ellipse(x, y, rng.uniform(5, 13), rng.uniform(3, 7), fill="#1b140e", opacity=0.9)
+                s.ellipse(x, y, rng.uniform(5, 13), rng.uniform(3, 7), fill=b.mud[1], opacity=0.9)
                 s.ellipse(x - 2, y - 1.5, rng.uniform(2, 5), rng.uniform(1, 2), fill="#8fa0a8", opacity=0.35)
 
     def clear(x: float, y: float, r: float) -> bool:
@@ -185,36 +278,39 @@ def ground_for(m: MapShape) -> Svg:
         return not any((x - z.center[0]) ** 2 + (y - z.center[1]) ** 2 < (z.radius + r + 10) ** 2
                        for z in m.zones)
 
-    for _ in range(700):  # verges: rocks, scrub and crystals
+    for _ in range(740):  # verges: rocks, scrub and crystals
         x, y = rng.uniform(4, FIELD_W - 4), rng.uniform(40, FIELD_H - 20)
         kind = rng.random()
         if kind < 0.45:
-            r = rng.uniform(3, 8.5)
+            r = rng.uniform(3, 9)
             if clear(x, y, r):
-                _rock(s, rng, x, y, r)
+                _rock(s, rng, x, y, r, b.rock)
         elif kind < 0.85:
             if clear(x, y, 4):
-                _tuft(s, rng, x, y, rng.choice(["#4f6a3a", "#5d7a40", "#3e5f55", "#6a5a7a"]))
-        elif kind < 0.93 and clear(x, y, 10):
+                _tuft(s, rng, x, y, rng.choice(b.tufts))
+        elif kind < 0.93 and b.crystals and clear(x, y, 10):
             _crystal(s, rng, x, y, rng.uniform(6, 11))
-    for pts in m.paths:  # burrows where each path starts, where the swarm emerges
-        cx = min(max(pts[0][0], 24.0), FIELD_W - 24.0)
-        cy = max(pts[0][1], 4.0)
+    burrows = [(min(max(pts[0][0], 24.0), FIELD_W - 24.0), max(pts[0][1], 4.0)) for pts in m.paths]
+    _creep(s, rng, samples, burrows)
+    for cx, cy in burrows:  # burrows where each path starts, where the swarm emerges
         s.glow(cx, cy, 70, P.HIVE_GLOW, 0.45)
         s.ellipse(cx, cy, 40, 16, fill=s.radial([(0, "#050305", 1), (0.7, "#1a0c16", 1),
                   (1, "#3a1a2a", 0.9)]))
         for i in range(9):  # a lip of torn earth
             a = math.radians(i * 22.5)
-            _rock(s, rng, cx + math.cos(a) * 42, cy + math.sin(a) * 14 + 8, rng.uniform(3, 5.5))
-    s.rect(0, 0, FIELD_W, 300, fill=s.linear([(0, P.HAZE, 0.92), (0.45, P.HAZE, 0.45), (1, P.HAZE, 0)]))
-    s.rect(0, FIELD_H - 180, FIELD_W, 180, fill=s.linear([(0, "#ffb060", 0), (1, "#ffb060", 0.10)]))
+            _rock(s, rng, cx + math.cos(a) * 42, cy + math.sin(a) * 14 + 8, rng.uniform(3, 5.5), b.rock)
+    s.rect(0, 0, FIELD_W, 300, fill=s.linear([(0, b.haze, 0.92), (0.45, b.haze, 0.45), (1, b.haze, 0)]))
+    s.rect(0, FIELD_H - 180, FIELD_W, 180, fill=s.linear([(0, "#ffb060", 0), (1, "#ffb060", b.warm)]))
+    # a vignette: darker corners pull the eye to the lanes
+    s.rect(0, 0, FIELD_W, FIELD_H, fill=s.radial([(0, "#000000", 0), (0.7, "#000000", 0),
+           (1, "#000000", 0.45)], cx=0.5, cy=0.55, r=0.75))
     return s
 
 
 def portal_sealed() -> Svg:
     """A burrow the swarm hasn't broken open yet: a crusted, pulsing mound (the game adds the
     wave it opens on)."""
-    s = Svg(96, 48)
+    s = Svg(96, 48, FIELD_RASTER)
     rng = random.Random(5)
     s.soft_shadow(48, 28, 42, 16, 0.5)
     s.ellipse(48, 24, 40, 16, fill=s.radial([(0, "#4a2238", 1), (0.6, "#2a1420", 1), (1, "#1a0c14", 1)]))

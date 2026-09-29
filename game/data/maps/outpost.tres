@@ -35,6 +35,7 @@ opens_at_wave = 1
 [resource]
 script = ExtResource("1_s")
 id = &"outpost"
+biome = &"desert"
 display_name = "Frontier Outpost"
 paths = Array[ExtResource("path_s")]([SubResource("path_0"), SubResource("path_1"), SubResource("path_2")])
 plots = PackedVector2Array(180, 250, 360, 250, 180, 500, 360, 500, 180, 725, 360, 725, 22, 615, 518, 615, 90, 876, 270, 876, 450, 876)

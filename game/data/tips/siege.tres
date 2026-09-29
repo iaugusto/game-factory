@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="TipDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/tip_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/tip_card.gd" id="2_c"]
+
+[sub_resource type="Resource" id="TipCard_0"]
+script = ExtResource("2_c")
+title = "Gate under siege"
+body = "Enemies that reach the wall pound the gate until they die."
+icon = "ui/wall"
+focus = &"gate"
+
+[sub_resource type="Resource" id="TipCard_1"]
+script = ExtResource("2_c")
+title = "Hold the gate"
+body = "If the gate's HP runs out, the run is lost."
+focus = &"gate_hp"
+
+[resource]
+script = ExtResource("1_s")
+id = &"siege"
+trigger = &"gate_struck"
+priority = 75
+cards = Array[ExtResource("2_c")]([SubResource("TipCard_0"), SubResource("TipCard_1")])

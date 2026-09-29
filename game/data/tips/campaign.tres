@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="TipDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/tip_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/tip_card.gd" id="2_c"]
+
+[sub_resource type="Resource" id="TipCard_0"]
+script = ExtResource("2_c")
+title = "Campaign"
+body = "Win a sector for a star. Hold the gate well for two more."
+icon = "ui/star"
+focus = &"sector_play"
+
+[resource]
+script = ExtResource("1_s")
+id = &"campaign"
+trigger = &"campaign_open"
+priority = 50
+cards = Array[ExtResource("2_c")]([SubResource("TipCard_0")])

@@ -97,6 +97,30 @@ func d_at_y(y: float) -> float:
 	return length
 
 
+## The centre line from `d0` to `d1` (clamped, d0 <= d1): its end points and every bend
+## between them.
+func stretch(d0: float, d1: float) -> PackedVector2Array:
+	var lo: float = clampf(d0, 0.0, length)
+	var hi: float = clampf(d1, lo, length)
+	var out := PackedVector2Array([point_at(lo)])
+	for i: int in points.size():
+		if cumulative[i] > lo and cumulative[i] < hi:
+			out.append(points[i])
+	out.append(point_at(hi))
+	return out
+
+
+## The distance from `p` to the nearest point of the polyline `pts` (at least one point).
+static func distance_to_polyline(pts: PackedVector2Array, p: Vector2) -> float:
+	if pts.size() == 1:
+		return pts[0].distance_to(p)
+	var best: float = INF
+	for i: int in pts.size() - 1:
+		var q: Vector2 = Geometry2D.get_closest_point_to_segment(p, pts[i], pts[i + 1])
+		best = minf(best, q.distance_squared_to(p))
+	return sqrt(best)
+
+
 ## The distance along the path of the centre-line point nearest `p`, and that distance to
 ## `p` (as Vector2(d, distance)).
 func nearest(p: Vector2) -> Vector2:

@@ -59,5 +59,30 @@ extends Resource
 @export var spit_range: float = 0.0
 @export var spit_speed: float = 260.0
 @export var disable_duration: float = 0.0
+
+@export_group("Flying")
+## In the air: it follows its path but passes over the barricade, escorts and mud, and ground
+## effects miss it (Mortar shells, mines, napalm). Bullets, beams, the Strike and Cryo hit it.
+@export var flying: bool = false
+
+@export_group("Shield")
+## Projects a shield on itself and every enemy within `shield_radius`: up to `shield_amount`
+## (× the wave's hp scale) that soaks damage before HP, refilled at `shield_regen` a second.
+@export var shield_radius: float = 0.0
+@export var shield_amount: float = 0.0
+@export var shield_regen: float = 0.0
+
+@export_group("Burrow")
+## After `burrow_every` seconds walking on the surface it dives for `burrow_length` of its path:
+## underground it can't be hit or targeted and tunnels under the barricade. While slowed it
+## can't dive (its surface clock pauses). 0 = never burrows.
+@export var burrow_every: float = 0.0
+@export var burrow_length: float = 0.0
+
+@export_group("Siege from range")
+## Stops `siege_range` short of the gate (along its path) and lobs a glob at the gate every
+## attack_interval for wall_damage (it lands after `lob_time` s). 0 = walks to the gate.
+@export var siege_range: float = 0.0
+@export var lob_time: float = 0.9
 @export_group("")
 @export var color: Color = Color.WHITE

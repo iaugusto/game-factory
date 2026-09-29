@@ -6,7 +6,7 @@
 script = ExtResource("1_s")
 id = &"mender"
 display_name = "Mender"
-description = "Heals every enemy around it. Pick it off first with a Sniper or Rail; blasts wash over it."
+description = "Heals every enemy around it. Kill it first."
 hp = 18.0
 speed = 34.0
 wall_damage = 3.0

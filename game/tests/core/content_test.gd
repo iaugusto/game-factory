@@ -30,7 +30,8 @@ func _configs() -> Array[RunConfig]:
 	return out
 
 
-## Every enemy type in any map's waves.
+## Every enemy type in any map's waves, and every one in data/enemies/ (content not placed in
+## a wave yet is still checked).
 func _enemies() -> Array[EnemyDef]:
 	var seen: Dictionary = {}
 	var out: Array[EnemyDef] = []
@@ -40,7 +41,41 @@ func _enemies() -> Array[EnemyDef]:
 				if not seen.has(s.enemy.id):
 					seen[s.enemy.id] = true
 					out.append(s.enemy)
+	for file: String in ResourceLoader.list_directory("res://data/enemies"):
+		if file.ends_with(".tres"):
+			var e: EnemyDef = load("res://data/enemies/" + file)
+			if not seen.has(e.id):
+				seen[e.id] = true
+				out.append(e)
 	return out
+
+
+func test_every_enemy_file_is_loaded_and_has_art() -> void:
+	var ids: Array[StringName] = []
+	for e: EnemyDef in _enemies():
+		ids.append(e.id)
+		assert_bool(ResourceLoader.exists("res://art/enemies/%s.svg" % e.id)) \
+				.override_failure_message("%s has no art" % e.id).is_true()
+	for id: StringName in [&"wasp", &"warden", &"burrower", &"bombardier"]:
+		assert_bool(ids.has(id)).override_failure_message("%s missing" % id).is_true()
+
+
+func test_each_stage2_enemy_carries_its_one_rule() -> void:
+	var by_id: Dictionary = {}
+	for e: EnemyDef in _enemies():
+		by_id[e.id] = e
+	assert_bool((by_id[&"wasp"] as EnemyDef).flying).is_true()
+	var w: EnemyDef = by_id[&"warden"]
+	assert_float(w.shield_radius * w.shield_amount * w.shield_regen).is_greater(0.0)
+	var b: EnemyDef = by_id[&"burrower"]
+	assert_float(b.burrow_every * b.burrow_length).is_greater(0.0)
+	var bomb: EnemyDef = by_id[&"bombardier"]
+	var best: float = 0.0
+	for u: UnitDef in cfg.units:
+		best = maxf(best, u.reach)
+	assert_float(bomb.siege_range).is_between(100.0, 400.0)
+	assert_float(best).override_failure_message("no unit can reach a Bombardier at its post") \
+			.is_greater(bomb.siege_range * 0.5)
 
 
 func test_every_map_loads_with_ten_waves() -> void:
@@ -83,22 +118,43 @@ func test_every_modifier_key_exists() -> void:
 	for c: CardDef in cfg.cards:
 		assert_bool(RunModifiers.has_key(c.key)) \
 				.override_failure_message("card %s: unknown key %s" % [c.id, c.key]).is_true()
-	for m: MetaUpgradeDef in cfg.meta_upgrades:
-		assert_bool(RunModifiers.has_key(m.key)) \
-				.override_failure_message("meta %s: unknown key %s" % [m.id, m.key]).is_true()
-		assert_int(m.max_level()).is_greater(0)
+	for k: SkillDef in cfg.skill_tree.skills:
+		assert_bool(RunModifiers.has_key(k.key)) \
+				.override_failure_message("skill %s: unknown key %s" % [k.id, k.key]).is_true()
+		assert_float(k.value).override_failure_message("skill %s: no effect" % k.id) \
+				.is_not_equal(0.0)
+
+
+func test_the_skill_tree_is_well_formed() -> void:
+	# Three branches (research §4.3), each tiers 1..5 with no gap or duplicate, costs rising
+	# 1, 1, 2, 2, 3 (27 stars for the whole tree), and a title and description on every node.
+	var tree: SkillTreeDef = cfg.skill_tree
+	assert_int(tree.branch_titles.size()).is_equal(3)
+	for b: int in tree.branch_titles.size():
+		var nodes: Array[SkillDef] = tree.branch_skills(b)
+		assert_int(nodes.size()).is_equal(5)
+		for i: int in nodes.size():
+			assert_int(nodes[i].tier).is_equal(i + 1)
+			assert_int(nodes[i].cost).is_equal([1, 1, 2, 2, 3][i])
+			assert_str(nodes[i].title).is_not_empty()
+			assert_str(nodes[i].description).is_not_empty()
+	assert_int(tree.total_cost()).is_equal(27)
+	# The user's own nodes are in it.
+	assert_str(String(tree.skill_by_id(&"last_stand").key)).is_equal("death_blast")
+	assert_float(tree.skill_by_id(&"scavengers").value).is_equal_approx(0.1, 1e-6)
 
 
 func test_counts() -> void:
 	assert_int(cfg.units.size()).is_equal(6)
-	assert_int(cfg.cards.size()).is_equal(11)
-	assert_int(cfg.meta_upgrades.size()).is_equal(6)
+	assert_int(cfg.cards.size()).is_equal(12)
+	assert_int(cfg.skill_tree.skills.size()).is_equal(15)
 	assert_int(cfg.plot_count()).is_equal(11)
 	assert_int(base.for_map(base.maps[1]).plot_count()).is_equal(15)
+	assert_int(base.maps.size()).is_equal(3)
 
 
 func test_ids_are_unique() -> void:
-	for group: Array in [cfg.units, cfg.cards, cfg.meta_upgrades]:
+	for group: Array in [cfg.units, cfg.cards, cfg.skill_tree.skills, base.maps]:
 		var seen: Dictionary = {}
 		for item: Resource in group:
 			var id: StringName = item.get("id")
@@ -108,10 +164,15 @@ func test_ids_are_unique() -> void:
 
 func test_all_enemies_crates_and_attacks_are_used() -> void:
 	var crates: Dictionary = {}
+	var in_waves: Dictionary = {}
 	for w: WaveDef in _all_waves():
 		for c: CrateSpawn in w.crates:
 			crates[c.crate.id] = true
-	assert_int(_enemies().size()).is_equal(8)
+		for sp: SpawnEntry in w.spawns:
+			in_waves[sp.enemy.id] = true
+	assert_int(in_waves.size()).is_equal(8)
+	# + the four Stage 2 enemies, which sectors 4-6 (Stage 4) put in waves.
+	assert_int(_enemies().size()).is_equal(12)
 	assert_int(crates.size()).is_equal(3)
 	var attacks: Dictionary = {}
 	for u: UnitDef in cfg.units:
@@ -326,12 +387,16 @@ func test_waves_get_more_threatening() -> void:
 			prev = t
 
 
-func test_the_second_map_is_harder_than_the_first() -> void:
-	# Sector 2 escalates: every one of its waves carries more threat than the Outpost's.
-	var a: RunConfig = base.for_map(base.maps[0])
-	var b: RunConfig = base.for_map(base.maps[1])
-	for i: int in a.waves.size():
-		assert_float(WaveSchedule.threat(b.waves[i])).is_greater(WaveSchedule.threat(a.waves[i]))
+func test_every_sector_is_harder_than_the_one_before() -> void:
+	# The campaign escalates: each sector's waves carry more threat than the same waves of the
+	# sector before it (the skill tree grows between them).
+	for k: int in range(1, base.maps.size()):
+		var a: RunConfig = base.for_map(base.maps[k - 1])
+		var b: RunConfig = base.for_map(base.maps[k])
+		for i: int in a.waves.size():
+			assert_float(WaveSchedule.threat(b.waves[i])).override_failure_message(
+					"%s wave %d is not harder than %s's" % [b.map.id, i + 1, a.map.id]) \
+					.is_greater(WaveSchedule.threat(a.waves[i]))
 
 
 func test_every_unit_offers_overcharge_and_its_own_trait() -> void:
@@ -396,3 +461,126 @@ func test_splitters_split_into_a_real_enemy_and_elites_come_late() -> void:
 					assert_int(i).override_failure_message("%s: elite in wave %d" % [c.map.id, i + 1]) \
 							.is_greater_equal(4)
 					assert_str(s.elite.title).is_not_empty()
+
+
+func test_tips_are_short_and_well_formed() -> void:
+	var ids: Dictionary = {}
+	assert_bool(base.tips.is_empty()).is_false()
+	for t: TipDef in base.tips:
+		assert_bool(ids.has(t.id)).override_failure_message("duplicate tip %s" % t.id).is_false()
+		ids[t.id] = true
+		assert_bool(TipDirector.EVENTS.has(t.trigger)) \
+				.override_failure_message("%s: unknown trigger %s" % [t.id, t.trigger]).is_true()
+		assert_int(t.cards.size()).is_between(1, 3)
+		for c: TipCard in t.cards:
+			assert_int(c.title.length()).override_failure_message("%s: title too long" % t.id) \
+					.is_less_equal(TipCard.TITLE_MAX)
+			assert_int(c.body.length()).override_failure_message("%s: body too long" % t.id) \
+					.is_less_equal(TipCard.BODY_MAX)
+			assert_bool(TipDirector.FOCUSES.has(c.focus)) \
+					.override_failure_message("%s: unknown focus %s" % [t.id, c.focus]).is_true()
+			assert_bool(c.wait_for == &"" or TipDirector.WAIT_EVENTS.has(c.wait_for)).is_true()
+			if c.wait_for != &"":
+				assert_str(String(c.focus)).override_failure_message(
+						"%s: a do card needs a spotlight" % t.id).is_not_empty()
+			if c.icon != "":
+				assert_bool(ResourceLoader.exists("res://art/%s.svg" % c.icon)) \
+						.override_failure_message("%s: missing icon %s" % [t.id, c.icon]).is_true()
+
+
+func test_no_description_is_a_wall_of_text() -> void:
+	var texts: Array[Array] = []
+	for e: EnemyDef in _enemies():
+		texts.append([e.id, e.description])
+	for u: UnitDef in base.units:
+		texts.append([u.id, u.description])
+		for m: MasteryDef in u.masteries:
+			texts.append([m.id, m.description])
+	for c: CardDef in base.cards:
+		texts.append([c.id, c.description])
+	for s: SkillDef in base.skill_tree.skills:
+		texts.append([s.id, s.description])
+	for pair: Array in texts:
+		assert_int(String(pair[1]).length()) \
+				.override_failure_message("%s: description over %d characters" % [pair[0],
+				TipCard.BODY_MAX]).is_less_equal(TipCard.BODY_MAX)
+
+
+func test_every_pair_of_units_has_exactly_one_synergy() -> void:
+	var ids: Array[StringName] = []
+	for u: UnitDef in base.units:
+		ids.append(u.id)
+	var n: int = ids.size()
+	assert_int(base.synergies.size()).is_equal(n * (n + 1) / 2)
+	for i: int in n:
+		for j: int in range(i, n):
+			var found: int = 0
+			for s: SynergyDef in base.synergies:
+				if s.involves(ids[i], ids[j]):
+					found += 1
+			assert_int(found).override_failure_message("%s+%s: %d synergies" % [ids[i], ids[j],
+					found]).is_equal(1)
+	var seen: Dictionary = {}
+	for s: SynergyDef in base.synergies:
+		assert_bool(seen.has(s.id)).is_false()
+		seen[s.id] = true
+		assert_bool(ids.has(s.unit_a) and ids.has(s.unit_b)).is_true()
+		assert_bool(s.bonus_a.is_empty() and s.bonus_b.is_empty()) \
+				.override_failure_message("%s does nothing" % s.id).is_false()
+		assert_int(s.description.length()).is_less_equal(TipCard.BODY_MAX)
+		assert_int(s.title.length()).is_less_equal(TipCard.TITLE_MAX)
+
+
+func test_every_map_has_pads_close_enough_to_link() -> void:
+	for c: RunConfig in _configs():
+		var pairs: int = 0
+		var pts: PackedVector2Array = c.map.plots
+		for i: int in pts.size():
+			for j: int in range(i + 1, pts.size()):
+				if pts[i].distance_to(pts[j]) <= c.synergy_range:
+					pairs += 1
+		assert_int(pairs).override_failure_message("%s has no linkable pads" % c.map.id) \
+				.is_greater(2)
+
+
+func test_special_attacks_are_sane() -> void:
+	assert_int(base.abilities.size()).is_greater_equal(2)
+	var ids: Dictionary = {}
+	var free: int = 0
+	var map_ids: Array[StringName] = []
+	for m: MapDef in base.maps:
+		map_ids.append(m.id)
+	for a: AbilityDef in base.abilities:
+		assert_bool(ids.has(a.id)).override_failure_message("duplicate %s" % a.id).is_false()
+		ids[a.id] = true
+		assert_int(a.display_name.length()).is_between(1, TipCard.TITLE_MAX)
+		assert_int(a.short_name.length()).override_failure_message(String(a.id)).is_between(1, 7)
+		assert_int(a.description.length()).is_between(1, TipCard.BODY_MAX)
+		assert_bool(ResourceLoader.exists("res://art/%s.svg" % a.icon)) \
+				.override_failure_message("%s: missing icon %s" % [a.id, a.icon]).is_true()
+		assert_bool(a.clip == "" or ResourceLoader.exists(a.clip)) \
+				.override_failure_message("%s: missing clip %s" % [a.id, a.clip]).is_true()
+		assert_float(a.delay).is_between(0.0, 2.0)
+		assert_float(a.cooldown).override_failure_message(String(a.id)) \
+				.is_greater(maxf(a.delay, a.duration) * 3.0)
+		if a.unlocked_by == &"":
+			free += 1
+		else:
+			assert_bool(map_ids.has(a.unlocked_by)) \
+					.override_failure_message("%s: unlocked by unknown map" % a.id).is_true()
+		match a.kind:
+			AbilityDef.Kind.STRIKE:
+				assert_float(a.damage).is_greater(0.0)
+				assert_float(a.radius).is_between(30.0, 150.0)
+			AbilityDef.Kind.FREEZE:
+				assert_float(a.duration).is_greater(0.0)
+				assert_float(a.slow).is_between(0.1, 1.0)
+			AbilityDef.Kind.BURN:
+				assert_float(a.damage * a.duration * a.length).is_greater(0.0)
+			AbilityDef.Kind.MINES:
+				assert_int(a.mine_count).is_greater(0)
+				assert_float(a.damage).is_greater(0.0)
+			AbilityDef.Kind.REPAIR:
+				assert_float(a.gate_heal + a.unit_heal).is_greater(0.0)
+	assert_int(free).override_failure_message("two attacks are free from the start").is_equal(2)
+	assert_str(String(base.abilities[0].unlocked_by)).is_empty()

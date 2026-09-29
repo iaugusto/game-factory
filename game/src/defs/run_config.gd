@@ -36,28 +36,60 @@ extends Resource
 @export var gate_repair_cost: int = 20
 @export var barricade: BarricadeDef
 @export var start_gold: int = 45
-@export var win_brick_bonus: int = 10
 @export var cards_per_offer: int = 3
+
+@export_group("Campaign")
+## The skill tree bought with stars between sectors.
+@export var skill_tree: SkillTreeDef
+## A win earns 1 star, +1 for each of these gate-HP fractions it ends at or above.
+@export var star_thresholds: PackedFloat32Array = PackedFloat32Array([0.5, 0.9])
+## A loss that cleared this many waves of a sector never won grants its first star, once.
+@export var consolation_waves: int = 5
+## Last Stand (RunModifiers.death_blast): the blast radius around a fallen unit's pad.
+@export var death_blast_radius: float = 80.0
+
+@export_group("Special attacks")
+## Every special attack, in the pick panel's order (AbilityDef). The player takes one into each
+## run, chosen when the map starts, from those unlocked (AbilityDef.unlocked_by); the first is
+## the default when there is no choice (the bot, direct runs).
+@export var abilities: Array[AbilityDef] = []
+
+@export_group("Synergies")
+## Two built units whose pads are this close form a link (docs/2026-09-27-artillery-and-synergies/).
+@export var synergy_range: float = 200.0
+## One per unordered pair of unit types, same-type pairs included.
+@export var synergies: Array[SynergyDef] = []
 
 @export_group("Presentation")
 ## Game speed while the build menu is open mid-wave: slowed, not paused, so the pressure stays.
 @export var build_menu_time_scale: float = 0.35
 
+@export_group("Tips")
+## Contextual tips (TipDirector): shown once each, with time stopped, when something new
+## happens. The campaign screen's tips live here too.
+@export var tips: Array[TipDef] = []
+
 @export_group("Content")
 ## The map a run is on, and its waves (for_map sets both from a MapDef).
 @export var map: MapDef
 @export var waves: Array[WaveDef] = []
-## Every map, in campaign order.
+## Every map, in campaign order: the sectors.
 @export var maps: Array[MapDef] = []
 @export var units: Array[UnitDef] = []
 @export var cards: Array[CardDef] = []
-@export var meta_upgrades: Array[MetaUpgradeDef] = []
 
 
 func unit_by_id(unit_id: StringName) -> UnitDef:
 	for u: UnitDef in units:
 		if u.id == unit_id:
 			return u
+	return null
+
+
+func ability_by_id(ability_id: StringName) -> AbilityDef:
+	for a: AbilityDef in abilities:
+		if a.id == ability_id:
+			return a
 	return null
 
 

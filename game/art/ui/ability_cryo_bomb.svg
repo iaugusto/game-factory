@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 48 48">
+<defs><radialGradient id="rg1" gradientUnits="objectBoundingBox" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#8fe8ff" stop-opacity="0.55"/><stop offset="0.7" stop-color="#15181d" stop-opacity="1"/><stop offset="1" stop-color="#0d0f12" stop-opacity="1"/></radialGradient><radialGradient id="rg2" gradientUnits="objectBoundingBox" cx="0.35" cy="0.3" r="0.5"><stop offset="0" stop-color="#dff8ff" stop-opacity="1"/><stop offset="0.6" stop-color="#6cc8ea" stop-opacity="1"/><stop offset="1" stop-color="#2a6a90" stop-opacity="1"/></radialGradient></defs>
+<circle cx="24" cy="24" r="22.5" fill="url(#rg1)" stroke="#8fe8ff" stroke-width="3"/>
+<circle cx="24" cy="26" r="12" fill="url(#rg2)" stroke="#0c2230" stroke-width="1.4"/>
+<rect x="21" y="10" width="6" height="5" rx="1" fill="#56626e" stroke="#0c1116" stroke-width="0.9"/>
+<line x1="31.5" y1="26" x2="16.5" y2="26" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="27.75" y1="32.5" x2="20.25" y2="19.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="20.25" y1="32.5" x2="27.75" y2="19.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="24" cy="26" r="2" fill="#ffffff"/>
+</svg>

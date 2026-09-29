@@ -43,15 +43,28 @@ RAIL = "#b08cff"
 RAIL_DEEP = "#5a3cc0"
 FLAME = "#ffb347"
 
+# Damage types (the counter chart), shared by the ui/dmg_* icons and each unit's accent, so a
+# unit's colour says what it counters.
+KINETIC = "#c9a24a"
+EXPLOSIVE = "#e8742e"
+PIERCING = "#b08cff"
+CRYO_TYPE = "#8fe8ff"
+
 # Swarm: (dark, mid, light, glow) per archetype
 DRONE = ("#7a2a0e", "#e8742e", "#ffc070", "#ffe066")
 SKITTER = ("#3a5212", "#9cc432", "#e2ff7a", "#ffffff")
 CARAPACE = ("#2c1650", "#6c44b4", "#b595ff", "#e07bff")
 QUEEN = ("#4a0c28", "#b52a64", "#ff7ab0", "#ffd0e8")
 SPITTER = ("#0c3a34", "#2fae8e", "#8ef5c8", "#d4ff5a")
-RAVAGER = ("#3a0e08", "#b8422a", "#ff8a5c", "#ffd24a")
+RAVAGER = ("#3a0610", "#b01e36", "#ff6a78", "#ffd24a")
 SPLITTER = ("#4a3a08", "#c9b43a", "#fff09a", "#ff9a3a")
-MENDER = ("#0e3a1e", "#3aa864", "#9affc0", "#7dffb0")
+MENDER = ("#4a4238", "#c9bfa8", "#fff8e8", "#7dffb0")
+# Content expansion, Stage 2: four new hues (amber-and-black, steel blue, earth, olive/bile).
+WASP = ("#5a3a04", "#ffc428", "#fff0a0", "#ffffff")
+WASP_STRIPE = "#1e1408"
+WARDEN = ("#122a4a", "#4a86c8", "#a8d4ff", "#7fe0ff")
+BURROWER = ("#3a2410", "#9a6a3a", "#d9aa70", "#ffb04a")
+BOMBARDIER = ("#26300a", "#6a7a22", "#b8c860", "#c8ff3a")
 
 # Loot
 WOOD = "#9a6a3a"

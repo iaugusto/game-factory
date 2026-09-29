@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_s")
 id = &"spitter"
-description = "Spits acid that jams a unit for 4 s. Freeze its gland with Cryo; bullets barely scratch it."
+description = "Spits acid that jams one of your units for 4 s."
 display_name = "Spitter"
 hp = 14.0
 speed = 30.0

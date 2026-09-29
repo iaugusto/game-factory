@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_s")
 id = &"grunt"
-description = "The swarm's line infantry. Packs of them melt under mortar splash; piercing rounds go straight through."
+description = "The swarm's line infantry. Comes in packs: splash damage melts them."
 display_name = "Drone"
 hp = 6.0
 speed = 42.0

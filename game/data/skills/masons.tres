@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/skill_def.gd" id="1_s"]
+
+[resource]
+script = ExtResource("1_s")
+id = &"masons"
+title = "Masons"
+description = "Gate repairs heal 50% more."
+branch = 1
+tier = 4
+cost = 2
+key = &"gate_repair_bonus"
+value = 0.5

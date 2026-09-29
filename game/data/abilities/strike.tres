@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/ability_def.gd" id="1_a"]
+
+[resource]
+script = ExtResource("1_a")
+id = &"strike"
+display_name = "Artillery Strike"
+short_name = "STRIKE"
+description = "A heavy shell lands where you tap and hits everything in the blast."
+icon = "ui/ability_strike"
+clip = "res://clips/strike.ogv"
+kind = 0
+cooldown = 30.0
+delay = 0.9
+radius = 70.0
+damage = 20.0

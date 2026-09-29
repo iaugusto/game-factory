@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/ability_def.gd" id="1_a"]
+
+[resource]
+script = ExtResource("1_a")
+id = &"repair"
+display_name = "Repair Drones"
+short_name = "REPAIR"
+description = "Drones patch the gate and every unit and barricade at once. No aiming."
+icon = "ui/ability_repair"
+clip = "res://clips/repair.ogv"
+kind = 4
+unlocked_by = &"switchback"
+cooldown = 40.0
+delay = 0.3
+gate_heal = 35.0
+unit_heal = 0.5
