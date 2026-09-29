@@ -3,9 +3,16 @@
 Work is grouped into **bundles**. Each bundle is sized to be taken from start to verified finish
 in **one session by a strong model** (e.g. Fable 5.1), without the user in the loop mid-way.
 
-_Last updated: 2026-09-27. Concept: "Hold the Gate" (see `README.md`). Current work: the
-**escalating-difficulty track (E1–E5)** below. It runs ahead of B3/B4, and B4 is re-scoped by
-it._
+_Last updated: 2026-09-29. Concept: "Hold the Gate" (see `README.md`). Current work: **E8,
+the content expansion** (Stages 1–2 done; next Stage 3, bosses as data), then B5._
+
+> **Platform focus, 2026-09-29 (user): Google Play first, not Steam.**
+> - The path after E8: **B5** (Android build and performance) → **D1** → the mobile track
+>   (**B15** economy and monetization, **B16** analytics, **B17** Play services and store kit)
+>   → **D3** (Android soft launch).
+> - The Steam items (**B9**, **D2**, **B13**, **B14**) are deferred until the user reopens
+>   them.
+> - Vertical-slice work (B6–B8, B10–B12) serves the Play build.
 
 > **Design correction, 2026-09-26 (user).**
 > - **Every unit is a fixed asset on a spot, the wall included.** There is no aimed squad.
@@ -110,13 +117,13 @@ should attempt.
 | B6 | Art direction options | Vertical slice | L | D1 | — |
 | B7 | Content pipeline & Python tools | Vertical slice | L | D1 | — |
 | B8 | First 3 minutes (onboarding) | Vertical slice | L | B6, B7 | — |
-| B9 | Steam page kit | Vertical slice | M | B6 | — |
-| **D2** | **Decision: publish the Steam page** | Gate | — | B8, B9 | — |
+| B9 | Steam page kit | Vertical slice | M | B6 | ⏸ deferred (Play first) |
+| **D2** | **Decision: publish the Steam page** | Gate | — | B8, B9 | ⏸ deferred (Play first) |
 | B10 | Content wave 1 | Production | XL | B7 | — |
 | B11 | Audio pass | Production | L | B6 | — |
 | B12 | Settings, localization, accessibility | Production | L | B8 | — |
-| B13 | Platform services: Steam | Production | L | D2 | — |
-| B14 | Demo build & Next Fest prep | Production | L | B10–B13 | — |
+| B13 | Platform services: Steam | Production | L | D2 | ⏸ deferred (Play first) |
+| B14 | Demo build & Next Fest prep | Production | L | B10–B13 | ⏸ deferred (Play first) |
 | B15 | Mobile F2P economy & monetization | Mobile | XL | D1 | — |
 | B16 | Analytics & soft-launch instrumentation | Mobile | L | B15 | — |
 | B17 | Mobile platform services & store kit | Mobile | L | B15 | — |
