@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="MapDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/map_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/path_def.gd" id="path_s"]
+[ext_resource type="Script" path="res://src/defs/zone_def.gd" id="zone_s"]
+[ext_resource type="Script" path="res://src/defs/wave_def.gd" id="t_w"]
+[ext_resource type="Resource" path="res://data/waves/mire_01.tres" id="w1"]
+[ext_resource type="Resource" path="res://data/waves/mire_02.tres" id="w2"]
+[ext_resource type="Resource" path="res://data/waves/mire_03.tres" id="w3"]
+[ext_resource type="Resource" path="res://data/waves/mire_04.tres" id="w4"]
+[ext_resource type="Resource" path="res://data/waves/mire_05.tres" id="w5"]
+[ext_resource type="Resource" path="res://data/waves/mire_06.tres" id="w6"]
+[ext_resource type="Resource" path="res://data/waves/mire_07.tres" id="w7"]
+[ext_resource type="Resource" path="res://data/waves/mire_08.tres" id="w8"]
+[ext_resource type="Resource" path="res://data/waves/mire_09.tres" id="w9"]
+[ext_resource type="Resource" path="res://data/waves/mire_10.tres" id="w10"]
+
+[sub_resource type="Resource" id="path_0"]
+script = ExtResource("path_s")
+points = PackedVector2Array(70, -10, 70, 110, 70, 300, 140, 520, 140, 980)
+spread = 20.0
+opens_at_wave = 1
+
+[sub_resource type="Resource" id="path_1"]
+script = ExtResource("path_s")
+points = PackedVector2Array(220, -10, 220, 110, 220, 300, 140, 520, 140, 980)
+spread = 20.0
+opens_at_wave = 3
+
+[sub_resource type="Resource" id="path_2"]
+script = ExtResource("path_s")
+points = PackedVector2Array(320, -10, 320, 110, 320, 300, 400, 520, 400, 980)
+spread = 20.0
+opens_at_wave = 6
+
+[sub_resource type="Resource" id="path_3"]
+script = ExtResource("path_s")
+points = PackedVector2Array(470, -10, 470, 110, 470, 300, 400, 520, 400, 980)
+spread = 20.0
+opens_at_wave = 1
+
+[sub_resource type="Resource" id="zone_0"]
+script = ExtResource("zone_s")
+kind = 0
+center = Vector2(140, 680)
+radius = 52.0
+value = 0.55
+
+[sub_resource type="Resource" id="zone_1"]
+script = ExtResource("zone_s")
+kind = 0
+center = Vector2(400, 720)
+radius = 52.0
+value = 0.55
+
+[sub_resource type="Resource" id="zone_2"]
+script = ExtResource("zone_s")
+kind = 0
+center = Vector2(70, 230)
+radius = 38.0
+value = 0.6
+
+[sub_resource type="Resource" id="zone_3"]
+script = ExtResource("zone_s")
+kind = 0
+center = Vector2(470, 230)
+radius = 38.0
+value = 0.6
+
+[resource]
+script = ExtResource("1_s")
+id = &"mire"
+biome = &"swamp"
+display_name = "Mire Crossing"
+paths = Array[ExtResource("path_s")]([SubResource("path_0"), SubResource("path_1"), SubResource("path_2"), SubResource("path_3")])
+plots = PackedVector2Array(145, 210, 395, 210, 30, 420, 510, 420, 270, 450, 270, 600, 30, 660, 510, 660, 270, 760, 30, 840, 510, 840, 270, 900, 140, 996, 270, 996, 400, 996)
+plot_unlock_waves = PackedInt32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 7, 1, 1, 1, 1)
+barricade_slots = PackedVector2Array(140, 890, 400, 890)
+zones = Array[ExtResource("zone_s")]([SubResource("zone_0"), SubResource("zone_1"), SubResource("zone_2"), SubResource("zone_3")])
+waves = Array[ExtResource("t_w")]([ExtResource("w1"), ExtResource("w2"), ExtResource("w3"), ExtResource("w4"), ExtResource("w5"), ExtResource("w6"), ExtResource("w7"), ExtResource("w8"), ExtResource("w9"), ExtResource("w10")])

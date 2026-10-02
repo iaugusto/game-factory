@@ -1,0 +1,121 @@
+[gd_resource type="Resource" script_class="WaveDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/wave_def.gd" id="w"]
+[ext_resource type="Script" path="res://src/defs/spawn_entry.gd" id="se"]
+[ext_resource type="Script" path="res://src/defs/crate_spawn.gd" id="cs"]
+[ext_resource type="Resource" path="res://data/enemies/grunt.tres" id="e_grunt"]
+[ext_resource type="Resource" path="res://data/enemies/spitter.tres" id="e_spitter"]
+[ext_resource type="Resource" path="res://data/enemies/brute.tres" id="e_brute"]
+[ext_resource type="Resource" path="res://data/enemies/runner.tres" id="e_runner"]
+[ext_resource type="Resource" path="res://data/enemies/ravager.tres" id="e_ravager"]
+[ext_resource type="Resource" path="res://data/enemies/wasp.tres" id="e_wasp"]
+[ext_resource type="Resource" path="res://data/enemies/burrower.tres" id="e_burrower"]
+[ext_resource type="Resource" path="res://data/enemies/warden.tres" id="e_warden"]
+[ext_resource type="Resource" path="res://data/enemies/bombardier.tres" id="e_bombardier"]
+[ext_resource type="Resource" path="res://data/crates/cache.tres" id="c_cache"]
+[ext_resource type="Resource" path="res://data/crates/supply.tres" id="c_supply"]
+
+[sub_resource type="Resource" id="s0"]
+script = ExtResource("se")
+enemy = ExtResource("e_grunt")
+count = 11
+start = 1.0
+interval = 1.0
+path = -1
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("se")
+enemy = ExtResource("e_grunt")
+count = 5
+start = 6.0
+interval = 0.6
+path = 2
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("se")
+enemy = ExtResource("e_spitter")
+count = 1
+start = 8.0
+interval = 4.0
+path = 2
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("se")
+enemy = ExtResource("e_brute")
+count = 1
+start = 12.0
+interval = 2.0
+path = 0
+
+[sub_resource type="Resource" id="s4"]
+script = ExtResource("se")
+enemy = ExtResource("e_runner")
+count = 5
+start = 18.0
+interval = 0.35
+path = 2
+
+[sub_resource type="Resource" id="s5"]
+script = ExtResource("se")
+enemy = ExtResource("e_ravager")
+count = 1
+start = 10.0
+interval = 1.0
+path = 0
+
+[sub_resource type="Resource" id="s6"]
+script = ExtResource("se")
+enemy = ExtResource("e_wasp")
+count = 5
+start = 5.0
+interval = 0.7
+path = -1
+
+[sub_resource type="Resource" id="s7"]
+script = ExtResource("se")
+enemy = ExtResource("e_burrower")
+count = 4
+start = 6.0
+interval = 1.2
+path = -1
+
+[sub_resource type="Resource" id="s8"]
+script = ExtResource("se")
+enemy = ExtResource("e_warden")
+count = 2
+start = 9.0
+interval = 4.0
+path = 0
+
+[sub_resource type="Resource" id="s9"]
+script = ExtResource("se")
+enemy = ExtResource("e_bombardier")
+count = 2
+start = 12.0
+interval = 4.0
+path = 1
+
+[sub_resource type="Resource" id="c0"]
+script = ExtResource("cs")
+crate = ExtResource("c_cache")
+time = 5.0
+path = -1
+
+[sub_resource type="Resource" id="c1"]
+script = ExtResource("cs")
+crate = ExtResource("c_supply")
+time = 15.0
+path = -1
+
+[sub_resource type="Resource" id="c2"]
+script = ExtResource("cs")
+crate = ExtResource("c_supply")
+time = 24.0
+path = -1
+
+[resource]
+script = ExtResource("w")
+spawns = Array[ExtResource("se")]([SubResource("s0"), SubResource("s1"), SubResource("s2"), SubResource("s3"), SubResource("s4"), SubResource("s5"), SubResource("s6"), SubResource("s7"), SubResource("s8"), SubResource("s9")])
+crates = Array[ExtResource("cs")]([SubResource("c0"), SubResource("c1"), SubResource("c2")])
+hp_scale = 3.64
+speed_scale = 1.12

@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EnemyDef" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/boss_phase.gd" id="2_p"]
+[ext_resource type="Resource" path="res://data/enemies/runner.tres" id="3_runner"]
+
+[sub_resource type="Resource" id="ph_1"]
+script = ExtResource("2_p")
+at_hp_fraction = 0.66
+callout = "THE BROOD HATCHES"
+spawn = ExtResource("3_runner")
+spawn_count = 8
+pause_seconds = 1.5
+
+[sub_resource type="Resource" id="ph_2"]
+script = ExtResource("2_p")
+at_hp_fraction = 0.33
+callout = "THE BROOD HATCHES"
+spawn = ExtResource("3_runner")
+spawn_count = 12
+pause_seconds = 1.5
+
+[resource]
+script = ExtResource("1_s")
+id = &"broodmother"
+display_name = "Broodmother"
+description = "Stops to hatch Skitter swarms at 2/3 and 1/3 health. Shells burst her."
+hp = 300.0
+speed = 11.0
+wall_damage = 40.0
+attack_interval = 3.0
+gold = 50
+radius = 38.0
+color = Color(0.78, 0.52, 0.2, 1)
+weak_to = 2
+resists = 4
+armor = 2.0
+threat = 180.0
+is_boss = true
+phases = Array[ExtResource("2_p")]([SubResource("ph_1"), SubResource("ph_2")])

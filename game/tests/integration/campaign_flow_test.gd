@@ -39,11 +39,11 @@ func _win(map_id: StringName, gate: float) -> void:
 func test_a_fresh_campaign_opens_sector_one_only() -> void:
 	var screen := _screen()
 	assert_int(screen.play_buttons.size()).is_equal(cfg.maps.size())
-	assert_int(cfg.maps.size()).is_equal(3)
+	assert_int(cfg.maps.size()).is_equal(6)
 	assert_bool(screen.play_buttons[0].disabled).is_false()
 	assert_bool(screen.play_buttons[1].disabled).is_true()
 	assert_bool(screen.play_buttons[2].disabled).is_true()
-	assert_str(screen.stars_label.text).is_equal("0 / 9")
+	assert_str(screen.stars_label.text).is_equal("0 / 18")
 
 
 func test_winning_a_sector_unlocks_the_next_and_its_stars_show() -> void:
@@ -51,7 +51,7 @@ func test_winning_a_sector_unlocks_the_next_and_its_stars_show() -> void:
 	var screen := _screen()
 	assert_bool(screen.play_buttons[1].disabled).is_false()
 	assert_bool(screen.play_buttons[2].disabled).is_true()
-	assert_str(screen.stars_label.text).is_equal("2 / 9")
+	assert_str(screen.stars_label.text).is_equal("2 / 18")
 	assert_str(screen.tree_button.text).contains("2 stars to spend")
 
 
@@ -142,3 +142,30 @@ func test_the_first_visit_shows_a_tip_once_and_tips_can_be_turned_off() -> void:
 	assert_bool(SaveData.load_from(path).tips_off).is_true()
 	again.replay_tips()
 	assert_bool(Session.profile().tips_off).is_false()
+
+
+func test_six_sectors_scroll_to_the_newest_open_one() -> void:
+	for i: int in 5:
+		_win(cfg.maps[i].id, 0.6)
+	var screen := _screen()
+	screen.size = Vector2(540, 1170)
+	for i: int in 6:
+		await get_tree().process_frame
+	assert_bool(screen.play_buttons[5].disabled).is_false()
+	assert_int(screen.scroll.scroll_vertical).is_greater(0)
+	var card: Rect2 = screen.play_buttons[5].get_global_rect()
+	assert_bool(screen.scroll.get_global_rect().encloses(card)).is_true()
+
+
+func test_the_six_tier_tree_fits_the_screen() -> void:
+	var screen := _screen()
+	screen.size = Vector2(540, 1170)
+	screen.open_tree()
+	for i: int in 4:
+		await get_tree().process_frame
+	var panel: SkillTreePanel = screen.tree_panel
+	assert_int(panel.node_buttons.size()).is_equal(18)
+	for id: StringName in panel.node_buttons:
+		assert_float(panel.node_buttons[id].get_global_rect().end.y).is_less_equal(1170.0)
+	assert_float(panel.buy_button.get_global_rect().end.y).is_less_equal(1170.0)
+	assert_float(panel.reset_button.get_global_rect().end.y).is_less_equal(1170.0)

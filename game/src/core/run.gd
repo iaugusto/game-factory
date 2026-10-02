@@ -453,11 +453,13 @@ func ability_ready() -> bool:
 
 
 ## Call the ability at `field_pos` (ignored by untargeted ones): its damage scales with the
-## wave's hp_scale, and it lands after its delay. False if it isn't ready.
+## wave's hp_scale (and the tree's ability_power_bonus), and it lands after its delay. False if
+## it isn't ready.
 func call_ability(field_pos: Vector2) -> bool:
 	if not ability_ready():
 		return false
-	combat.cast(ability, field_pos, config.waves[wave_index].hp_scale)
+	combat.cast(ability, field_pos,
+			config.waves[wave_index].hp_scale * (1.0 + mods.ability_power_bonus))
 	ability_cooldown_left = ability_cooldown()
 	return true
 

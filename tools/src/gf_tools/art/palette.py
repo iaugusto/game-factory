@@ -65,6 +65,10 @@ WASP_STRIPE = "#1e1408"
 WARDEN = ("#122a4a", "#4a86c8", "#a8d4ff", "#7fe0ff")
 BURROWER = ("#3a2410", "#9a6a3a", "#d9aa70", "#ffb04a")
 BOMBARDIER = ("#26300a", "#6a7a22", "#b8c860", "#c8ff3a")
+# Content expansion, Stage 3: the three new bosses (copper, slate with ember seams, indigo).
+BROODMOTHER = ("#3a1a0c", "#a2562a", "#f0a878", "#b8ff5a")
+TITAN = ("#1a1d22", "#5a616c", "#b0b8c4", "#ff8a3a")
+OVERMIND = ("#170c36", "#4e36a8", "#b09cff", "#6af0ff")
 
 # Loot
 WOOD = "#9a6a3a"

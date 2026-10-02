@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EnemyDef" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/boss_phase.gd" id="2_p"]
+[ext_resource type="Resource" path="res://data/enemies/warden.tres" id="3_warden"]
+
+[sub_resource type="Resource" id="ph_escort"]
+script = ExtResource("2_p")
+at_hp_fraction = 1.0
+spawn = ExtResource("3_warden")
+spawn_count = 2
+keep_pace = true
+
+[sub_resource type="Resource" id="ph_shed"]
+script = ExtResource("2_p")
+at_hp_fraction = 0.5
+callout = "PLATES SHED — IT CHARGES"
+spawn = ExtResource("3_warden")
+spawn_count = 2
+keep_pace = true
+armor_delta = -6.0
+speed_mult = 1.8
+pause_seconds = 1.0
+
+[resource]
+script = ExtResource("1_s")
+id = &"titan"
+display_name = "Siege Titan"
+description = "Plated, walled in by Wardens. At half health it sheds its plates and charges."
+hp = 450.0
+speed = 8.0
+wall_damage = 70.0
+attack_interval = 3.0
+gold = 60
+radius = 42.0
+color = Color(0.45, 0.5, 0.58, 1)
+weak_to = 8
+resists = 1
+armor = 6.0
+threat = 270.0
+is_boss = true
+phases = Array[ExtResource("2_p")]([SubResource("ph_escort"), SubResource("ph_shed")])

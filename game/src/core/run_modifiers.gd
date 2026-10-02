@@ -47,6 +47,8 @@ var mastery_discount: float = 0.0
 var gate_thorns: float = 0.0
 ## The special attack reloads this much faster (a fraction off its cooldown).
 var ability_cooldown_bonus: float = 0.0
+## Special attacks hit this much harder (a fraction on their damage; E8 Stage 4's tier-6 node).
+var ability_power_bonus: float = 0.0
 
 
 ## True if `key` names a modifier field (used to validate content).

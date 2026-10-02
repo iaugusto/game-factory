@@ -28,6 +28,14 @@ Stage 2 of the content expansion (docs/2026-09-27-content-expansion/):
   forward.
 - Bombardier (sieges from range): an olive body under a tall bile-green sac feeding a stubby
   mortar tube pointed forward.
+
+Stage 3, the bosses (each as big as the Queen, in its own hue):
+- Broodmother (hatches swarms): a bloated copper nest of translucent pods, a green Skitter
+  embryo curled in each, on eight stubby legs.
+- Siege Titan (plated, sheds at half health): overlapping slate plates split by glowing ember
+  seams, a battering ram forward, six pillar legs.
+- The Overmind (the finale): a giant indigo brain, its folds lit by cyan neural light, on
+  writhing tendrils (the frames swing the tendrils), with a crown of eyes forward.
 """
 
 from __future__ import annotations
@@ -35,7 +43,7 @@ from __future__ import annotations
 from typing import Callable
 
 from . import palette as P
-from .svg import Svg, ellipse_points, polar, smooth_path
+from .svg import Svg, ellipse_points, path_from, polar, smooth_path
 
 # Frame-to-frame leg swing, degrees.
 SWING = 13.0
@@ -457,6 +465,120 @@ def bombardier(s: Svg, frame: int) -> None:
         _eye(s, cx + sgn * 6.5, 37, 1.0, glow)
 
 
+# --- Broodmother ---------------------------------------------------------------------------
+
+def broodmother(s: Svg, frame: int) -> None:
+    dark, mid, light, glow = P.BROODMOTHER
+    cx = 64.0
+    # eight stubby legs, low under the nest
+    _legs(s, cx, [(40, 70), (38, 78), (38, 86), (41, 94)], [210, 190, 168, 148], 12, 13,
+          [-25, -8, 12, 30], mid, 5.2, frame, light)
+    # the nest: a lumpy, bloated abdomen
+    ab = ellipse_points(cx, 48, 38, 40, 24, jitter=[0, 0.04, -0.03, 0.05, -0.02])
+    _shell(s, smooth_path(ab), dark, mid, light, hl=(0.3, 0.25))
+    # translucent pods, each with a curled green embryo
+    pods = ((44, 26, 8), (66, 18, 7), (86, 30, 8.5), (52, 46, 9), (78, 52, 8.5), (40, 64, 7),
+            (64, 68, 7.5), (88, 70, 6.5), (60, 34, 5.5))
+    for (x, y, r) in pods:
+        s.circle(x, y, r + 1.4, fill=dark, opacity=0.7)
+        s.circle(x, y, r, fill=s.radial([(0, "#fff2dc", 0.95), (0.6, light, 0.75), (1, mid, 0.9)],
+                                         cx=0.4, cy=0.35), stroke=P.INK, stroke_width=0.9)
+        s.glow(x, y + r * 0.1, r * 1.3, glow, 0.35)
+        s.ellipse(x, y + r * 0.1, r * 0.42, r * 0.55, fill="#6a9a1a", stroke="#2c4a08",
+                  stroke_width=0.5)
+        s.circle(x, y - r * 0.28, r * 0.2, fill=glow)
+        s.circle(x - r * 0.35, y - r * 0.4, r * 0.25, fill="#ffffff", opacity=0.75)
+    _gloss(s, cx - 6, 40, 30, 32, 0.3)
+    # thorax and head
+    _shell(s, smooth_path(ellipse_points(cx, 90, 17, 10, 16)), dark, mid, light)
+    _shell(s, smooth_path(ellipse_points(cx, 104, 12, 9, 16)), dark, dark, mid)
+    for sgn in (-1, 1):  # mandibles
+        d = (f"M{cx + sgn * 5},{109} Q{cx + sgn * 13},{115} {cx + sgn * 6},{122} "
+             f"Q{cx + sgn * 8},{114} {cx + sgn * 2},{111} Z")
+        s.outlined(d, light, P.INK, 1.0)
+    for (x, y, r) in ((cx - 4.5, 104, 1.7), (cx + 4.5, 104, 1.7), (cx - 7.5, 100.5, 1.1),
+                      (cx + 7.5, 100.5, 1.1)):
+        _eye(s, x, y, r, glow)
+
+
+# --- Siege Titan ---------------------------------------------------------------------------
+
+def titan(s: Svg, frame: int) -> None:
+    dark, mid, light, glow = P.TITAN
+    cx = 64.0
+    # six pillar legs
+    _legs(s, cx, [(38, 44), (36, 64), (38, 84)], [205, 180, 155], 17, 15, [-15, 5, 20],
+          mid, 7.0, frame, light)
+    # the body under the plates, glowing through the seams
+    s.glow(cx, 62, 46, glow, 0.35)
+    body = ellipse_points(cx, 60, 34, 44, 20)
+    s.outlined(smooth_path(body), s.radial([(0, "#ffd08a", 1), (0.5, glow, 1), (1, "#7a2a08", 1)]),
+               P.INK, 1.4)
+    # overlapping plates, back to front (each a rounded slab), rivets along their edges
+    for k, (y, w, h) in enumerate(((20, 26, 10), (36, 32, 10), (53, 34, 10), (70, 32, 10),
+                                   (86, 26, 9))):
+        slab = [(cx - w, y + h * 0.3), (cx - w * 0.8, y - h * 0.6), (cx, y - h * 0.85),
+                (cx + w * 0.8, y - h * 0.6), (cx + w, y + h * 0.3), (cx + w * 0.7, y + h * 0.75),
+                (cx, y + h * 0.9), (cx - w * 0.7, y + h * 0.75)]
+        _shell(s, smooth_path(slab, tension=0.35), dark, mid, light, hl=(0.3, 0.2))
+        for sgn in (-1, 1):
+            for f in (0.45, 0.8):
+                s.circle(cx + sgn * w * f, y + h * 0.15, 1.2, fill=light, stroke=P.INK,
+                         stroke_width=0.4)
+        if k in (1, 2, 3):  # shoulder spikes
+            for sgn in (-1, 1):
+                bx = cx + sgn * w
+                s.outlined(f"M{bx},{y - 4} L{bx + sgn * 9},{y + 1} L{bx},{y + 5} Z", light,
+                           P.INK, 0.9)
+    _gloss(s, cx - 4, 50, 28, 36, 0.25)
+    # the battering ram, forward
+    ram = [(cx - 12, 94), (cx + 12, 94), (cx + 9, 112), (cx, 122), (cx - 9, 112)]
+    _shell(s, path_from(ram), dark, mid, light, hl=(0.35, 0.2))
+    s.path(f"M{cx},{96} L{cx},{119}", fill="none", stroke=dark, stroke_width=1.2, opacity=0.8)
+    for (x, y) in ((cx - 6, 100), (cx + 6, 100)):
+        _eye(s, x, y, 1.6, glow)
+
+
+# --- The Overmind --------------------------------------------------------------------------
+
+def overmind(s: Svg, frame: int) -> None:
+    dark, mid, light, glow = P.OVERMIND
+    cx = 64.0
+    # writhing tendrils (they swing between frames instead of walking)
+    for i, (deg, ln) in enumerate(((200, 34), (178, 38), (156, 36), (134, 30))):
+        sw = 10 * (1 if (i + frame) % 2 == 0 else -1)
+        for sgn in (-1, 1):
+            a = deg if sgn < 0 else 180 - deg
+            base = polar(cx, 66, 30, a)
+            mid_pt = polar(base[0], base[1], ln * 0.55, a + sw * sgn)
+            tip = polar(mid_pt[0], mid_pt[1], ln * 0.5, a - sw * 1.6 * sgn)
+            s.limb([base, mid_pt, tip], mid, P.INK, 5.0, light)
+            s.circle(tip[0], tip[1], 2.0, fill=glow, stroke=P.INK, stroke_width=0.5)
+    # the brain: two hemispheres, folds traced in neural light
+    s.glow(cx, 56, 56, glow, 0.3)
+    for sgn in (-1, 1):
+        hemi = ellipse_points(cx + sgn * 17, 54, 22, 42, 20, jitter=[0, 0.03, -0.02])
+        _shell(s, smooth_path(hemi), dark, mid, light, hl=(0.35 if sgn < 0 else 0.5, 0.25))
+        for k, y in enumerate((26, 40, 54, 68, 82)):
+            x0 = cx + sgn * 5
+            x1 = cx + sgn * (30 - abs(k - 2) * 4)
+            wob = 5 if k % 2 == 0 else -5
+            d = (f"M{x0},{y} Q{(x0 + x1) / 2},{y + wob} {x1},{y - 2} "
+                 f"Q{x1 + sgn * 3},{y + 5} {x1 - sgn * 4},{y + 8}")
+            s.path(d, fill="none", stroke=dark, stroke_width=2.2, opacity=0.9)
+            s.path(d, fill="none", stroke=glow, stroke_width=0.8, opacity=0.8)
+    s.path(f"M{cx},{14} L{cx},{94}", fill="none", stroke=P.INK, stroke_width=2.0)
+    _gloss(s, cx - 8, 44, 34, 36, 0.3)
+    # the face, forward: a crown of eyes over a small maw
+    _shell(s, smooth_path(ellipse_points(cx, 102, 16, 11, 16)), dark, dark, mid)
+    for (x, y, r) in ((cx, 99, 3.0), (cx - 7.5, 101, 2.0), (cx + 7.5, 101, 2.0),
+                      (cx - 12, 105.5, 1.3), (cx + 12, 105.5, 1.3), (cx - 3.5, 106, 1.2),
+                      (cx + 3.5, 106, 1.2)):
+        _eye(s, x, y, r, glow)
+    s.path(f"M{cx - 5},{110} Q{cx},{115} {cx + 5},{110}", fill="none", stroke=P.INK,
+           stroke_width=1.6)
+
+
 # --- registry ------------------------------------------------------------------------------
 
 # id -> (draw function, frame box size in art units, zoom). Each enemy is drawn in its box and
@@ -475,6 +597,9 @@ ENEMIES: dict[str, tuple[Callable[[Svg, int], None], float, float]] = {
     "warden": (warden, 52.0, 1.0),
     "burrower": (burrower, 48.0, 1.0),
     "bombardier": (bombardier, 52.0, 1.0),
+    "broodmother": (broodmother, 128.0, 1.0),
+    "titan": (titan, 128.0, 1.0),
+    "overmind": (overmind, 128.0, 1.0),
 }
 
 

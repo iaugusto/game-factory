@@ -7,8 +7,38 @@
 > **Maintenance rule.** Any change to the codebase structure must update this file in the
 > same change. A stale overview is a bug. Mark each entry `existing` or `planned`.
 
-_Last updated: 2026-09-28 — **content expansion, Stage 2: four new enemies** (work item
-`2026-09-27-content-expansion`), each with one new rule and one weakness:
+_Last updated: 2026-09-30 — **content expansion, Stage 4: sectors 4–6** (work item
+`2026-09-27-content-expansion`; E8 is now built):
+- **Three sectors:** Mire Crossing (swamp), Ashfall (ash, with mid-field burrows) and The Hive
+  (infested). Each has 10 waves (generated from Switchback's plus its new enemies), and each
+  ends with its Stage 3 boss.
+- **Campaign:** 6 sectors and 18 stars; the cards scroll. The skill tree gets a sixth tier
+  (Heavy Ordnance, Bastion, Fire Control; `RunModifiers.ability_power_bonus`).
+- **Retuned:** Bombardier (4 every 3.5 s); the new enemies' `threat` re-rated.
+- **Bot:** need × √toughness, boss phase spawns counted, profiles T9/T12/T15.
+- **Balance:** 5 of 6 sectors meet both targets; Canyon's bot score fell (see the log).
+- **Content rules:** mid-field breach portals are allowed; escalation is checked per sector
+  (total and boss wave).
+- Tests 288 game + 12 tool.
+
+Before that, 2026-09-29 — **content expansion, Stage 3: bosses as data**:
+- **`BossPhase`** (`defs/boss_phase.gd`) on `EnemyDef.phases` (with `is_boss`): at an HP
+  fraction a phase fires once, in order. It can spawn a brood or an escort just ahead of the boss
+  (`keep_pace`: they walk at its speed; `guard`: no harm reaches the boss while any of them
+  lives), change its armour and speed, stop it (`Enemy.pause`), and pop a `callout`. A phase
+  at 1.0 fires on arrival.
+- **Hive Queen:** 50 per strike every 3 s (was 999: one strike lost the run); she spawns 6
+  Skitters at 50%.
+- **Three new bosses** (art, phases, intel text), which Stage 4 puts at the end of sectors
+  4–6; `--showcase=broodmother|titan|overmind` plays them now:
+  - **Broodmother** hatches Skitter swarms at 66% and 33%.
+  - **Siege Titan** is walled in by Wardens, then sheds its plates and charges at 50%.
+  - **The Overmind** is guarded by 3 Wardens, then calls Wasps and then Menders.
+- **`BossBar`** (under the top bar): name, HP, a tick per phase, "GUARDED ×N". A banner names a
+  boss as it arrives; a guarded boss wears a gold bubble with tethers to its guards.
+
+Before that, 2026-09-28 — **content expansion, Stage 2: four new enemies**, each with one new
+rule and one weakness:
 - **Wasp** (`EnemyDef.flying`): over the barricade, mud and escorts; Mortar shells, mines and
   napalm miss it. Weak to kinetic.
 - **Warden** (`shield_radius/amount/regen`): shields itself and every enemy near it
@@ -19,8 +49,6 @@ _Last updated: 2026-09-28 — **content expansion, Stage 2: four new enemies** (
   (`CombatSim.Lob`). Weak to piercing.
 
 They are content only until Stage 4 puts them in sector waves; `--showcase=IDS` plays them now.
-Tests 270 game + 12 tool.
-
 Earlier the same day, **napalm burns along the road** (the user's Stage 1 review): a
 BURN attack now sets a stretch of path alight (`CombatSim.burn_layout`, `Stretch`), running
 down every branch through the tapped spot.
@@ -54,7 +82,7 @@ Before that, **art readability and resolution** (work item
   - Empty slots draw a ghost of the barricade (`props/barricade_slot`), and a tap anywhere on
     that footprint selects the slot.
 - **Grounds:** a biome per map (`MapDef.biome`): a desert Outpost, a red-rock Canyon, a
-  tundra Switchback. Lanes are sunken, the edges get a vignette, and the swarm's creep leaves
+  tundra Switchback, a swamp Mire, black-ash Ashfall and the infested Hive (creep ×2.4). Lanes are sunken, the edges get a vignette, and the swarm's creep leaves
   sparse stains and veins on the lane edges, fading before the wall.
 - **Tests:** 233 game + 11 tool tests.
 
@@ -203,7 +231,7 @@ removed in `2026-09-26-fixed-units-wall-spots`.
 | `docs/2026-09-27-artillery-and-synergies/` | existing | E5c: the artillery strike and unit synergies. Research (prior art, the 21-pair table), plan, and log (the balance probe, and why the strike was toned down rather than the HP raised further). |
 | `docs/2026-09-26-counters-and-coin-sinks/` | existing | E3: the counter chart, sell, masteries, barricade, gate repair, preview and intel cards, escorts, waves re-authored, bot counter-picking, balance log. |
 | `game/` | existing | Godot 4.7.2 project root. |
-| `game/project.godot` | existing | Portrait 540×960, `canvas_items`/`expand` stretch, Mobile renderer, ETC2/ASTC, GdUnit4 plugin, autoloads `Services` and `Session`, `game/platform/provider` = `stub`. Main scene: `campaign.tscn`. |
+| `game/project.godot` | existing | Portrait **540×1170** (E9: the 19.5:9 design; 16:9 screens get extra width through `expand`; no window override, `DesktopWindow` fits the desktop window), `canvas_items`/`expand` stretch, **Compatibility (GLES3) renderer** (B5: half the memory of Mobile on the S24, same frame time), `application/run/max_fps.mobile=60` (the 60 Hz sim on 120 Hz phones; less heat), ETC2/ASTC, GdUnit4 plugin, autoloads `Services` and `Session`, `game/platform/provider` = `stub`. Main scene: `campaign.tscn`. |
 | `game/scenes/campaign.tscn` | existing | **The main scene**: one `Control` with `campaign_screen.gd`. Any run argument (`--map`, `--seed`, `--autoplay`, …) jumps straight to `run.tscn`. |
 | `game/scenes/run.tscn` | existing | The run: one `Node2D` with `run_controller.gd`; children are built in code. |
 | `game/src/core/` | existing | The rules, as pure `RefCounted` classes (§3.1). Everything here runs headless. |
@@ -221,13 +249,16 @@ removed in `2026-09-26-fixed-units-wall-spots`.
 | `game/tests/core/*_test.gd` | existing | One suite per core file, plus `content_test` (integrity and design rules of `res://data`), `tree_rules_test` (the rule nodes of the skill tree), `platform_test` and `toolchain_test`. |
 | `game/tests/integration/run_integration_test.gd` | existing | Real content plus Autoplay: wave 1 cleared with crates broken; deterministic full run; seeds diverge; unit-shot budget; **the campaign curve** (bot wins per sector and tree profile). |
 | `game/tests/integration/campaign_flow_test.gd` | existing | The campaign loop against a temporary save: locks, stars, buying and resetting the tree (saved as it happens), a campaign run playing with the tree and recording its stars, a direct run recording nothing, and the campaign tip (shown once, saved, replay, tips off). |
-| `game/tests/integration/run_scene_test.gd` | existing | The real scene, headless (24 cases): plot input and build menu, wall spots, crate taps, jammed units, the breach, sell and masteries, the barricade card, the wave preview and gate repair, slow-mo, the flow screens, pooling, batching, and tips (off in direct runs; the first run's enemy → build (a "do" card) → start order; no tip over a menu and none twice; a crate tip stopping time mid-wave). |
+| `game/tests/integration/run_scene_test.gd` | existing | The real scene, headless (40 cases): plot input and build menu, wall spots, crate taps, jammed units, the breach, sell and masteries, the barricade card, the wave preview and gate repair, slow-mo, the flow screens, pooling, batching, and tips (off in direct runs; the first run's enemy → build (a "do" card) → start order; no tip over a menu and none twice; a crate tip stopping time mid-wave). |
 | `tools/` | existing | Python package `gf-tools` (uv, stdlib only, Python 3.12) (§3.6). |
 | `scripts/test.sh` | existing | The one game test command (import pass, then GdUnit4 headless). Nonzero exit on failure. |
 | `scripts/capture_clip.sh` | existing | `NAME SECONDS [game args]`: Movie Maker at 60 fps → `captures/NAME.mp4`. Needs a display (WSLg). |
 | `captures/` | existing (git-ignored) | Recorded clips. |
-| `scripts/build_*.sh` | planned | Desktop and Android builds (B5). |
-| `.tools/` | existing (git-ignored) | Godot 4.7.2 editor binary. Export templates come in B5. |
+| `game/export_presets.cfg` | existing | One "Android" preset (B5): arm64 only, no Gradle; `dev.holdthegate.debug` (a debug placeholder, not the store ID); 0.1.0-proto; immersive. It excludes tests, GdUnit and probes, includes `override.cfg` (present only during a `--renderer=compat` A/B build), and holds no credentials (the debug keystore comes from env). |
+| `scripts/android_env.sh` | existing | Sourced. Points JAVA_HOME, ANDROID_HOME and the Godot debug-keystore env at `.tools/`. It keeps all tool state out of `$HOME` (`HOME` for adb through the `.tools/bin/adb` wrapper, Java `user.home`). `adb_ensure` reconnects to `.tools/android-home/last_device`. |
+| `scripts/build_android.sh` | existing | `[--renderer=compat] [--install] [--launch]`: exports `builds/android/hold-the-gate-debug.apk` with the self-contained `.tools/godot-export`, then installs and starts it over adb. |
+| `scripts/android_perf.sh` | existing | `NAME SECONDS FLAGS…`: a cold launch with flags (through `user://launch_args.txt`, deleted after), wait, then the PERF lines, meminfo, thermal and start time → `captures/perf/NAME.txt`; `CLIP=1` adds a screenrecord. |
+| `.tools/` | existing (git-ignored) | The Godot 4.7.2 editor binary; `godot-export/` (a hardlink + `_sc_`, with the Android templates in `editor_data/`), `jdk/` (Temurin 17), `android-sdk/` (platform-tools, build-tools 35.0.1/36.1.0, android-35), `keystores/debug.keystore`, `android-home/`, `java-prefs/`, `bin/adb`, `cache/` (the downloads). |
 | `prototypes/` | planned | Throwaway experiments; never imported by the game. |
 | `.env.example` / `secrets.example.json` | planned | Shape of secrets once the first one exists. |
 | `LICENSE` | planned | Deliberately absent (commercial; all rights reserved by default). |
@@ -243,7 +274,7 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
 | --- | --- | --- | --- |
 | `path_geo.gd` | `PathGeo` | A path's geometry: distance along it ↔ position, normals, `d_at_y`, nearest point, a walker's cached segment, `stretch(d0, d1)` (the centre line between, bends kept) and `distance_to_polyline`. | Lets enemies move by distance on bent paths while targeting stays a binary search. |
 | `run.gd` | `Run` | One run. Phases `BUILD → WAVE → CARD → BUILD … → WON/LOST`; the run **opens in BUILD** (prep). State: the wall/gate (HP = max − damage taken), coins (`gold`), `plots` (from the map, with unlock waves), cards, the barricade (in the sim). `plot_open`, `open_paths`, `newly_open_paths`, `unit_repair_cost`/`repair_unit` (build sets unit HP; upgrade keeps damage taken). Methods: `start_wave()`, `step()`, `tap(field_pos)` (WAVE only); `build` (1 s setup mid-wave), `upgrade`, `sell` (50% of `Plot.spent`), `buy_mastery`, `build_barricade` (a free move in BUILD), `upgrade_barricade`, `repair_barricade` (**BUILD and WAVE**); `repair_gate` (BUILD, `gate_repair_amount`); `pick_card(i)`, `reroll_cards()` (free rerolls from the tree; draws other cards). Tree hooks: veteran levels and `unit_max_hp` on build, the barricade standing from the start, cheaper masteries, bigger offers. Also `gate_fraction()` (stars), `state_hash()`. **The special attack:** `ability` (an `AbilityDef`; the pool's first by default), `choose_ability(def)` (BUILD before wave 1 only), `ability_cooldown_left` (0 at each wave start), `ability_cooldown()` (after `ability_cooldown_bonus`), `ability_ready()` (WAVE only), `call_ability(pos)` (damage × the wave's `hp_scale`); REPAIR's gate HP arrives as `combat.pending_gate_heal`. `build`/`sell` refresh the links. | The state machine lives in core so a run plays headless. Spending mid-wave is the point: crate coins are meant to be used while the fight is on. |
-| `combat_sim.gd` | `CombatSim` (+ `Enemy`, `Crate`, `Plot`, `Shot`, `Spit`) | The WAVE tick: spawns (elites applied); moves enemies (unit attackers stop at a unit in reach and destroy it: `unit_struck`, `unit_destroyed`; an enemy at the gate **sieges**: it stops and strikes every `attack_interval` until killed) and crates; spitters spit at the nearest working unit in range (not while sieging) and globs jam units (`Plot.disabled`); Menders heal neighbours (`mender_pulse`); Splitters burst into their brood on death (inserted in sorted order); fires every working plot; moves unit shots and globs; `end_wave()` cleans up. **Every hit goes through `effective_damage`** (armour, floored, then ×2 weak / ×0.5 resisted; `enemy_hit` reports the chart's effect). Per-plot stats (`plot_damage/reload/reach`) fold in modifiers, the mastery and the boost. **The barricade** (`Barricade`) stops enemies on the paths through it until it breaks. **Escorts:** a small enemy can't pass a much bigger one ahead on its path. Beams stop at `beam_max_targets`. The barricade blocks every path passing within 40 of its slot (`place_barricade`, per-path stop distances). `tap_crate_at(p, dmg)` is the only way to hit a crate. `reload_of` (with the Overdrive boost), `damage_of` and `reach_of` apply the run's modifiers. Unit shots can crit. Signals: `enemy_spawned/killed/struck/hit`, `crate_spawned/tapped/broken/lost`, `spit_fired`, `unit_disabled`, `unit_fired`, `shell_landed`, `boost_started`, `barricade_struck/broken`, `unit_blast`, `synergies_changed`, `ability_called/landed`, `mine_exploded`. **Synergies:** the stat functions add `plot.syn` (reload, damage, reach), and `_fire_plot` adds its pierce, crit, beam targets, splash, slow and **chill** (a non-slowing unit's hits slow briefly). **Special attacks:** `cast(ability, pos, power)` queues a `Cast`; `_land_casts` (after the move pass) applies it by kind: STRIKE hits everything in its radius, FREEZE sets `Enemy.stun` (no moving, striking, spitting or healing) then a slow, BURN adds a `Hazard`: the road `burn_layout` picks, one `Stretch` per open path through the spot nearest the tap (within 2 px: a fork burns every branch, a shared trunk once), `burn_half_width` (path spread + 8) to each side; `_burn` each tick hits every enemy within reach of a stretch, whichever path it walks, MINES lays `Mine`s along the nearest open path (`nearest_open_path`, `mine_layout`; `_trip_mines` sets one off when an enemy reaches it), REPAIR heals units and the barricade and queues gate HP. All ability damage is raw, past the chart and armour. Casts and mines have their own id counter, so calling one never shifts enemy ids (which seed the spread). **Tree rules:** Last Stand (a destroyed unit's blast) and Iron Gate (thorns per gate strike) happen inside the move pass, so their damage is queued and applied right after it (`_resolve_queued`); a kill there would corrupt the path arrays being walked. | **Enemies and crates move by `d`** (distance along their path, `PathGeo`); paths are sorted by `d`. **Units** target "first in reach", the least distance left, by binary search over a `d` window per nearby path (a full scan was too slow for phones). Mud slows; high ground adds plot reach. Portals open per wave (`set_open_paths`). Attacks: BULLET (homing, fizzles), SHELL (lands where the target *was*; fast enemies dodge), HITSCAN, BEAM (up to `beam_max_targets` on the target's path within reach). Enemy `x` lives in core so range and shots match the drawing. |
+| `combat_sim.gd` | `CombatSim` (+ `Enemy`, `Crate`, `Plot`, `Shot`, `Spit`) | The WAVE tick: spawns (elites applied); moves enemies (unit attackers stop at a unit in reach and destroy it: `unit_struck`, `unit_destroyed`; an enemy at the gate **sieges**: it stops and strikes every `attack_interval` until killed) and crates; spitters spit at the nearest working unit in range (not while sieging) and globs jam units (`Plot.disabled`); Menders heal neighbours (`mender_pulse`); Splitters burst into their brood on death (inserted in sorted order); fires every working plot; moves unit shots and globs; `end_wave()` cleans up. **Every hit goes through `effective_damage`** (armour, floored, then ×2 weak / ×0.5 resisted; `enemy_hit` reports the chart's effect). Per-plot stats (`plot_damage/reload/reach`) fold in modifiers, the mastery and the boost. **The barricade** (`Barricade`) stops enemies on the paths through it until it breaks. **Escorts:** a small enemy can't pass a much bigger one ahead on its path. Beams stop at `beam_max_targets`. The barricade blocks every path passing within 40 of its slot (`place_barricade`, per-path stop distances). `tap_crate_at(p, dmg)` is the only way to hit a crate. `reload_of` (with the Overdrive boost), `damage_of` and `reach_of` apply the run's modifiers. Unit shots can crit. Signals: `enemy_spawned/killed/struck/hit`, `crate_spawned/tapped/broken/lost`, `spit_fired`, `unit_disabled`, `unit_fired`, `shell_landed`, `boost_started`, `barricade_struck/broken`, `unit_blast`, `synergies_changed`, `ability_called/landed`, `mine_exploded`, `boss_phase`. **Bosses (Stage 3):** `bosses` lists the ones on the field; `_check_phases` (after a non-lethal hit on a boss, and on arrival) fires each `BossPhase` once, in order; `_fire_phase` changes `Enemy.armor_bonus` (via `extra_armor()`) and `speed`, sets `Enemy.pause` (stopped, not frozen), and inserts its spawns sorted just ahead of the boss; guards (`Enemy.guarding`/`guards`, `guarded()`) void every hit on the boss while any live. **Synergies:** the stat functions add `plot.syn` (reload, damage, reach), and `_fire_plot` adds its pierce, crit, beam targets, splash, slow and **chill** (a non-slowing unit's hits slow briefly). **Special attacks:** `cast(ability, pos, power)` queues a `Cast`; `_land_casts` (after the move pass) applies it by kind: STRIKE hits everything in its radius, FREEZE sets `Enemy.stun` (no moving, striking, spitting or healing) then a slow, BURN adds a `Hazard`: the road `burn_layout` picks, one `Stretch` per open path through the spot nearest the tap (within 2 px: a fork burns every branch, a shared trunk once), `burn_half_width` (path spread + 8) to each side; `_burn` each tick hits every enemy within reach of a stretch, whichever path it walks, MINES lays `Mine`s along the nearest open path (`nearest_open_path`, `mine_layout`; `_trip_mines` sets one off when an enemy reaches it), REPAIR heals units and the barricade and queues gate HP. All ability damage is raw, past the chart and armour. Casts and mines have their own id counter, so calling one never shifts enemy ids (which seed the spread). **Tree rules:** Last Stand (a destroyed unit's blast) and Iron Gate (thorns per gate strike) happen inside the move pass, so their damage is queued and applied right after it (`_resolve_queued`); a kill there would corrupt the path arrays being walked. | **Enemies and crates move by `d`** (distance along their path, `PathGeo`); paths are sorted by `d`. **Units** target "first in reach", the least distance left, by binary search over a `d` window per nearby path (a full scan was too slow for phones). Mud slows; high ground adds plot reach. Portals open per wave (`set_open_paths`). Attacks: BULLET (homing, fizzles), SHELL (lands where the target *was*; fast enemies dodge), HITSCAN, BEAM (up to `beam_max_targets` on the target's path within reach). Enemy `x` lives in core so range and shots match the drawing. |
 | `wave_schedule.gd` | `WaveSchedule` | `WaveDef` → time-sorted ENEMY and CRATE events; random paths (among the open ones) resolved up front from the `spawn` stream. `enemy_counts`, `new_enemies` (first sight, for the new-enemy tips), `threat`. | Fixes the whole wave at its start. |
 | `counters.gd` | `Counters` | Chart queries for the UI and tests: `units_strong_vs`, `units_weak_vs`, `enemies_countered_by`. | The damage math stays in `CombatSim.effective_damage`. |
 | `economy.gd` | `Economy` | Kill reward (a trickle), crate reward (with `crate_reward_bonus`; both with the tree's `loot_bonus`), unit build/upgrade prices (discounted, capped at 90%). | — |
@@ -251,12 +282,12 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
 | `run_modifiers.gd` | `RunModifiers` | Additive bonuses fed by cards and skill-tree nodes, addressed by field name; `has_key()` validates content. E5b added `loot_bonus`, `unit_hp_bonus`, `death_blast`, `start_barricade`, `veteran_level`, `gate_repair_bonus`, `card_rerolls`, `extra_cards`, `mastery_discount`, `gate_thorns`. | A new bonus is one field plus the code that reads it. |
 | `skill_tree.gd` | `SkillTree` | The owned nodes: `spent`, `is_reachable` (tier above owned), `can_buy`/`buy` against stars earned, `reset`, `to_modifiers`. | Stars are never stored as a balance (free = earned − spent), so a free reset can't drift. Unknown ids cost and give nothing. |
 | `campaign.gd` | `Campaign` | Best stars per sector, the cleared set (unlocks) and the consolation set. `stars_for` (1 for a win, +1 per `star_thresholds` gate fraction met), `record`, `is_unlocked`, `stars_total`. | A loss that cleared `consolation_waves` of a never-won sector gives its first star once, so a player is never hard-stuck; it doesn't unlock. |
-| `balance_run.gd` | `BalanceRun` | `PROFILES` (the T0/T3/T6 tree profiles), `profile_mods`, and `play(cfg, mods, seed, strategy, max_ticks, ability)`, which returns a flat record: won, waves, gate, ticks, ability, casts, links, unspent, crates, kills, leaks (gate damage per enemy type), units at the end. | Keeps the balance tool's logic in tested core; the tool script only loops. |
+| `balance_run.gd` | `BalanceRun` | `PROFILES` (the T0…T15 tree profiles, one per sector), `profile_mods`, and `play(cfg, mods, seed, strategy, max_ticks, ability)`, which returns a flat record: won, waves, gate, ticks, ability, casts, links, unspent, crates, kills, leaks (gate damage per enemy type), units at the end. | Keeps the balance tool's logic in tested core; the tool script only loops. |
 | `synergies.gd` | `Synergies` | Unit links: `find(cfg, a, b)` (either order); `compute(plots, cfg)`, which fills each `Plot.syn` (a summed `StatBonus`, each distinct synergy once per plot) and `Plot.links` for pads within `synergy_range`; `preview(plots, cfg, index, unit_id)`, what a build there would form. | Recomputed on build, sell and destruction only (`CombatSim.refresh_synergies`), so stats stay flat per tick. |
 | `tip_director.gd` | `TipDirector` (+ `Pending`) | Which tip to show next: `notify(event, arg)` queues every unseen tip the event triggers, highest priority first. `pending()`, `done(p)` (marks it seen), `clear_queue()`. Per-argument tips (a new enemy) are seen once per argument (`key()` = `id:arg`). Lists the known `EVENTS`, `WAIT_EVENTS` and `FOCUSES`. | Pure, so the tip order is unit tested and a headless run never blocks. The seen set is the save's dictionary, so marking a tip seen persists with the save. |
 | `save_data.gd` | `SaveData` | Versioned save (**v6**: campaign, tree, stats, legacy, **tips** `{seen, off}`); migrations v1→…→v6 (v5→v6 adds tips with none seen). v3/v4 refunded removed upgrades as bricks; **v5 retires bricks**: the old balance and levels move to `legacy` verbatim. `record_result`, `stars_free`. Atomic writes; an unreadable save goes to `.bad`. | `CLAUDE.md` §4: migrate, never reset. Written by `Session` after each campaign run and tree change. |
 | `rng_streams.gd` | `RngStreams` | Named streams (`spawn`, `cards`, `combat`), each seeded from `"<seed>:<name>"`. | Drawing more from one stream never shifts the others. |
-| `autoplay.gd` | `Autoplay` | A scripted player. It taps the crate nearest the gate at `taps_per_second` (3, tick-based). It **counter-picks**: it fills the biggest gap, the enemy type its units kill slowest relative to count × threat, with the most cost-effective counter. It saves for that unit unless under siege, and builds next to siegers. It repairs units below 60% HP first. It raises the barricade where it blocks the most threat after 3 units, builds only on open plots, repairs the gate and barricade, and buys the cheapest upgrade (level, Overcharge, barricade level). `step_wave()` and `play()`. | Used by the tests, `--autoplay`, fast-forwards, and the balance probes. Knobs: `chase_crates`, `taps_per_second`, `counter_pick`, `build_order`, `max_units`, `barricade_after_units`, `repair_gate_below`, `card_choice`, `PRESETS`/`preset(name)` (the balance strategies: smart, casual, no_ability, no_links, cycle, heavy, light, mixed, no_loot). **Counter-picking (B4):** over the coming two waves, the gap is the type with the most need (count × `wall_damage`) for the least coverage (`_kill_rate`: kills per second, counting overkill; splash is one target against fast enemies); then the unit that kills the gap fastest per √cost. `synergy_pick` (place where the unit links most), `ability_threat`/`ability_every_ticks`/`repair_below` (`ability_target`, per kind, over `best_cluster`: strike on the best cluster or a sieger; freeze only near the gate; napalm and mines just ahead of the cluster, on its path; repair when the gate or a unit is low). |
+| `autoplay.gd` | `Autoplay` | A scripted player. It taps the crate nearest the gate at `taps_per_second` (3, tick-based). It **counter-picks**: it fills the biggest gap, the enemy type its units kill slowest relative to count × threat, with the most cost-effective counter. It saves for that unit unless under siege, and builds next to siegers. It repairs units below 60% HP first. It raises the barricade where it blocks the most threat after 3 units, builds only on open plots, repairs the gate and barricade, and buys the cheapest upgrade (level, Overcharge, barricade level). `step_wave()` and `play()`. | Used by the tests, `--autoplay`, fast-forwards, and the balance probes. Knobs: `chase_crates`, `taps_per_second`, `counter_pick`, `build_order`, `max_units`, `barricade_after_units`, `repair_gate_below`, `card_choice`, `PRESETS`/`preset(name)` (the balance strategies: smart, casual, no_ability, no_links, cycle, heavy, light, mixed, no_loot). **Counter-picking (B4):** over the coming two waves (bosses' phase spawns included), the gap is the type with the most need (count × `wall_damage` × √(HP × wave scale / 10), since a tough one lives to strike many times; E8 Stage 4) for the least coverage (`_kill_rate`: kills per second, counting overkill; splash is one target against fast enemies); then the unit that kills the gap fastest per √cost. `synergy_pick` (place where the unit links most), `ability_threat`/`ability_every_ticks`/`repair_below` (`ability_target`, per kind, over `best_cluster`: strike on the best cluster or a sieger; freeze only near the gate; napalm and mines just ahead of the cluster, on its path; repair when the gate or a unit is low). |
 
 ### 3.2 Content definitions (`game/src/defs/`) and data
 
@@ -279,7 +310,7 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
   `attack_interval` for the siege and an optional Spit group:
   `spit_interval`, `spit_range`, `spit_speed`, `disable_duration`; Stage 2 groups: `flying`,
   Shield `shield_radius`/`shield_amount`/`shield_regen`, Burrow `burrow_every`/`burrow_length`,
-  Siege from range `siege_range`/`lob_time`), **`SpawnEntry`**,
+  Siege from range `siege_range`/`lob_time`; Stage 3: Boss `is_boss`, `phases`), **`SpawnEntry`**,
   **`WaveDef`** (spawns, crates,
   **`hp_scale`/`speed_scale`**: the difficulty ramp), **`CardDef`**.
 - **`StyleDef`:** fonts (display, body, `display_caps`), the type scale (caption 15, body 19,
@@ -294,6 +325,9 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
 - **`TipDef`** (`id`, `trigger`, `per_arg`, `priority`, `cards`) and **`TipCard`** (`title` ≤ 24
   characters, `body` ≤ 80, `icon`, `clip` (a looping `.ogv`), `focus`, `wait_for` for a "do"
   card).
+- **`BossPhase`** (existing, Stage 3): one phase of a boss. `at_hp_fraction` (1.0 = on
+  arrival; listed highest first), `callout`, `spawn` × `spawn_count` (just ahead of the boss),
+  `keep_pace`, `guard`, `armor_delta`, `speed_mult`, `pause_seconds`.
 - **`AbilityDef`** (existing): a special attack. `id`, `display_name`, `short_name`,
   `description`, `icon`, `clip`, `kind` (STRIKE, FREEZE, BURN, MINES, REPAIR), `unlocked_by`
   (a map id; empty = free), `cooldown`, `delay`, `radius`, `damage`, `duration`, `slow`,
@@ -362,7 +396,13 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
   - **Ravager:** mauls units within 90 of it (6 per 0.8 s); weak to kinetic.
   - **Splitter:** bursts into 3 Skitters; weak to explosive.
   - **Mender:** heals neighbours 6% per second; weak to piercing.
-  - Hive Queen: boss; 999, so one strike breaks the gate.
+  - Hive Queen: boss; 50 every 3 s (two strikes break a base gate, three with any gate
+    upgrade); 6 Skitters at 50%.
+  - **Stage 3 bosses** (not in waves until Stage 4): Broodmother (300 hp, armour 2; weak to
+    explosive; Skitter swarms of 8 and 12 at 66% and 33%), Siege Titan (450, armour 6; weak to
+    cryo; 2 Wardens escort it, and at 50% it sheds all 6 armour, ×1.8 speed, 2 more Wardens),
+    The Overmind (600, armour 3; weak to piercing; guarded by 3 Wardens, 10 Wasps at 66%, 3
+    Menders at 33%).
   - **Elites:** Armoured, Swift and Regenerating.
 - **Unit HP:** Rifleman 80, MG 120, Cryo 100, Mortar 140, Sniper 90, Rail 180 (+30% per
   level). A destroyed unit empties its plot with no refund; repair costs 0.3 coins per HP.
@@ -372,7 +412,7 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
 - **Cards (12):** fire mission (−30% special-attack reload), bounty, crits (units), crowbars (taps), masonry, field repairs, overclock,
   permafrost, rangefinder (+10% reach), skitter bounty, sharpened (+15% unit damage),
   scavengers.
-- **Skill tree (15 nodes, stars):**
+- **Skill tree (18 nodes, 36 stars of the 18 a player can earn):**
   - **Arsenal:** Drill Instructors (+8% reload), Sharpshooters (+10% damage), **Last Stand**
     (a destroyed unit explodes, 25 × its level, radius 80), Veteran Crews (built at level 2),
     Overwatch (masteries −50%).
@@ -381,10 +421,13 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
     attackers).
   - **Logistics:** War Chest (+30 coins), **Scavengers** (+10% loot), Engineers (−10% prices),
     Supply Drop (a free card reroll), Fourth Card (4-card offers).
+  - **Tier 6 (E8 Stage 4, 3 stars each):** Heavy Ordnance (Arsenal; special attacks +40%,
+    `ability_power_bonus`), Bastion (Bulwark; +60 gate), Fire Control (Logistics; special
+    attacks reload 20% faster).
 
 ### 3.3 Rules in brief
 
-- **Playfield:** 540 wide; the gate at y = 860; a fixed tick at 60 Hz.
+- **Playfield:** 540 wide; the gate at y = **980** (`run_config.tres`; E9 moved every map +120, so it was 860; `RunConfig`'s default and the test fixtures still use 860); a fixed tick at 60 Hz.
 - **Maps:**
   - **Frontier Outpost:** 3 straight paths.
   - **Canyon Pass:** two entrances merging into a trunk (with mud), a left flank breach at
@@ -392,11 +435,21 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
   - **Switchback Ridge** (sector 3): one long path that zig-zags across the field twice (a
     ridge pad covers both crossings, mud on the second); a fork down the left flank opening at
     wave 3; a tunnel portal low on the right, close to the gate, opening at wave 6.
+  - **Mire Crossing** (sector 4, E8 Stage 4): four narrow paths (spread 20) merging in pairs
+    into two muddy trunks; the inner portals open at waves 3 and 6. Wasps, then Wardens; the
+    Broodmother.
+  - **Ashfall** (sector 5): two trunks around a centre column of ridge pads; burrows break
+    open **mid-field** at waves 4 (right) and 7 (left), the only portals allowed inside the
+    field (a later breach, ≥ 300 above the gate). Burrowers, then Bombardiers; the Siege Titan.
+  - **The Hive** (sector 6): one portal whose path forks around a central ridge and rejoins;
+    side breaches at waves 3 and 6. Every enemy; the Overmind.
+  - Sectors 4–6 were generated by `docs/2026-09-27-content-expansion/gen_maps.py` and
+    `gen_waves.py`, from Switchback's waves (thinned) plus each sector's new enemies.
   - Enemies spread up to ±30 around their path's centre line (less for big ones).
 - **Nothing the player owns moves.** There is no squad.
 - **Units:**
   - 11 plots on `outpost` (three depths on each path divider, two on the verges, and **three
-    wall spots** at y = 876, behind `wall_y`); 15 on `canyon`, 4 of them unlocking later.
+    wall spots** at y = 996, behind `wall_y`); 15 on `canyon`, 4 of them unlocking later.
   - Each unit fires at the enemy nearest the wall within its reach, once per reload.
   - Units never hit crates.
 - **Crates:** tapped (1 damage per tap, with 16 units of slop) → broken → coins (+ boost);
@@ -444,6 +497,14 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
 - `StubServices`: records calls.
 - `services_registry.gd`: autoload **`Services`**, which picks the provider from
   `game/platform/provider` (unknown names fall back to the stub).
+- `launch_args.gd`: **`LaunchArgs.get_args()`**, the game's launch flags. On desktop these are
+  the command line after `--`. On **Android debug builds** they come from
+  `user://launch_args.txt` (B5), because Godot 4.7's activity drops the intent's
+  `command_line_params`. Release builds never read the file. `RunController`, `Session`,
+  `CampaignScreen` and `UiTheme` read flags only through it.
+- `desktop_window.gd`: **`DesktopWindow.fit(window)`** (E9) shrinks a desktop window that
+  overflows the monitor (the 540×1170 design) to 90% of the usable height, centred. It skips
+  phones, headless runs, Movie Maker and an explicit `--resolution`.
 
 ### 3.5 Presentation (`game/src/sim/`, `game/src/ui/`)
 
@@ -504,7 +565,7 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
   - Launch args: `--seed --map --tree=all|none|id,id --autoplay --skip-to-wave --skip --perf
     --quit-on-end --save=PATH --tips --style=ID`, and dev-only `--stress --open-plot=N`
     (`parse_args`, `tree_from_arg`).
-- **`Session`** (autoload, `ui/session.gd`): the save (loaded lazily from `--save` or
+- **`Session`** (autoload, `ui/session.gd`): fits the desktop window on start (`DesktopWindow.fit`), the save (loaded lazily from `--save` or
   `user://save.json`), the active sector, `run_mods`, `record` (then writes the save),
   `persist`, and scene switching (`goto_run`, `goto_campaign`). Tests point it at a temporary
   file with `use_save`.
@@ -572,17 +633,22 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
     - It animates on unscaled time and exposes `freeze` (0..1) for the owner to stop time.
     - `unit_row` builds the weak/strong icon rows.
   - `Hud` shows wall HP, wave, the Overdrive timer, and a coin count-up and pulse.
+  - `BossBar` (`ui/boss_bar.gd`, Stage 3) sits under it, centred between the screen edge and
+    the ability button, while a boss is on the field: its name, HP (with a white drain), a tick
+    per phase (dimmed once passed), gold while guarded and "GUARDED ×N". `RunController` banners
+    a boss's arrival and pops each phase's `callout` with a ring and a shake; `EnemyField` draws
+    a guarded boss's gold bubble and dashed tethers from its guards.
   - `BuildMenu` is a radial unit ring with damage badges, prices and affordability. For a
     built plot it shows a card: stats, type and "strong vs", UPGRADE (or the two masteries at
     max level), and SELL.
   - `BarricadeMenu`: build, move here, upgrade, repair.
   - `EnemyIcon`: frame 0 of an enemy's atlas.
-  - `CardPicker` (3 or 4 cards; "↻ REROLL" while free rerolls remain), `BuildBar` (the next wave's preview, REPAIR GATE and START WAVE, at the top
-    under the HUD, so the wall spots stay clear), and `PhaseOverlay` (the result screen: VICTORY / "THE GATE FELL", a `StarRow`, waves and
+  - `CardPicker` (3 or 4 cards; "↻ REROLL" while free rerolls remain), `BuildBar` (E9: the next wave's preview in a slim panel under the HUD, and REPAIR GATE and START WAVE in the
+    bottom thumb strip; `covered_rects()` for the plot-overlap test), `ThumbStrip` (the bottom 84-unit band for the run's controls, over the wall art's lower part), and `PhaseOverlay` (the result screen: VICTORY / "THE GATE FELL", a `StarRow`, waves and
     gate held, NEW BEST or the consolation line; NEXT sector (wins), RETRY, CAMPAIGN; after a
     loss it fades in once the breach has played).
   - `UnitIcon`.
-  - **`AbilityButton`:** round, top right under the HUD, WAVE only. It shows the picked
+  - **`AbilityButton`:** round, at the right of the bottom thumb strip (E9; it was top right), WAVE only. It shows the picked
     attack's icon, a cooldown pie, its short name/"Ns"/"TAP FIELD", a pulse when ready and a
     ring when armed.
   - **`AbilityPicker`:** the pick at map start. A card per attack (icon, name, one line,
@@ -639,7 +705,8 @@ Pure logic; the only Godot types used are `RefCounted`, `Resource` data and
   - `props`: the wall; crates (`CRATE_ZOOM`); the barricade (3 levels plus rubble,
     `BARRICADE_W`×`BARRICADE_H`) and its slot ghost; decoration helpers.
   - `terrain`: per-map grounds and the sealed portal.
-    - `BIOMES` (dusk, desert, canyon, tundra) is picked by `MapDef.biome`.
+    - `BIOMES` (dusk, desert, canyon, tundra, swamp, ash, infested) is picked by
+      `MapDef.biome`; `Biome.creep` scales the creep's density.
     - Lanes are sunken (a lit lip and a left-wall shadow); a vignette darkens the edges.
     - `_creep`: sparse stains, veins and pustules on the lane edges, commonest near the
       burrows and none within 200 of the wall.
@@ -680,6 +747,56 @@ platform: PlatformServices ◀── StubServices ◀── Services
 ```
 
 ## 5. Change log
+
+- **2026-10-01 (E9, the tall-screen layout):**
+  - The design size is 540×1170.
+  - `wall_y` is 980: every map moved +120 by `shift_maps.py`, and the top-edge paths have a
+    longer approach.
+  - Per-sector HP is re-tuned (`bake_hp.py`).
+  - New: `ThumbStrip` and `DesktopWindow`.
+  - `BuildBar` is split between the top and the bottom; `AbilityButton` is in the strip.
+  - The art generator reads `wall_y` from data (`terrain.field_height`).
+  - Docs: `docs/2026-10-01-e9-tall-screen-layout/`.
+
+- **2026-10-01 (B5, the Android build and performance):**
+  - New: `game/export_presets.cfg`, `game/src/platform/launch_args.gd`, and
+    `scripts/{android_env,build_android,android_perf}.sh`.
+  - `project.godot`: the Compatibility renderer, and a mobile fps cap of 60.
+  - `RunController`: `--perf` prints a p95 frame time; launch flags come through
+    `LaunchArgs`.
+  - Tests: two `LaunchArgs` cases in `platform_test`.
+  - The toolchain sits in `.tools/`. On-device numbers are in
+    `docs/2026-10-01-b5-android-build/implementation.md`.
+
+- **2026-09-30 (content expansion, Stage 4: sectors 4–6):**
+  - Data: `maps/mire.tres`, `ashfall.tres`, `hive.tres`; `waves/{mire,ashfall,hive}_01…10`;
+    `skills/heavy_ordnance`, `bastion`, `fire_control`; `run_config.tres` maps ×6;
+    `skill_tree.tres` ×18. Bombardier 4 / 3.5 s; `threat` re-rated (Wasp 3, Burrower 8,
+    Bombardier 10, Warden 10, bosses 180/270/360).
+  - Code:
+    - `RunModifiers.ability_power_bonus` (`Run.call_ability`).
+    - `CampaignScreen.scroll`, which brings the newest sector into view.
+    - `SkillTreePanel.NODE_SIZE` 74 tall.
+    - `Autoplay._choose_unit`: phase spawns, and √toughness need.
+    - `BalanceRun.PROFILES` T9/T12/T15.
+  - Tools:
+    - `terrain.BIOMES` swamp/ash/infested and `Biome.creep`.
+    - `balance/report.SECTOR_PROFILES` ×6.
+    - Authoring scripts `gen_maps.py`, `gen_waves.py` and `waves_summary.py` in the work
+      item folder.
+  - Tests: content (6 maps, 18 nodes, 15 enemies in waves, breach portals, per-sector
+    escalation), ability power, campaign scroll, tree fit; 288 game tests.
+
+- **2026-09-29 (content expansion, Stage 3: bosses as data):**
+  - `defs/boss_phase.gd` (`BossPhase`); `EnemyDef.is_boss`, `phases`.
+  - `CombatSim`: `bosses`, `boss_phase` signal, `_check_phases`, `_fire_phase`;
+    `Enemy.next_phase/armor_bonus/pause/guards/guarding`, `guarded()`, `extra_armor()`.
+  - Data: `boss.tres` (50 per strike, every 3 s, a phase), `broodmother.tres`, `titan.tres`,
+    `overmind.tres`. Art: `enemies.py` broodmother/titan/overmind + palette.
+  - View: `ui/boss_bar.gd`; `RunController` boss banner and phase FX, `--showcase` spawns one
+    of a boss; `EnemyField` guard bubble and tethers.
+  - Tests: `boss_test` (12), content (`test_every_boss_is_well_formed`, bosses by `is_boss`,
+    15 enemies), a scene test for the bar, bubble and phases; 285 game tests.
 
 - **2026-09-29 (tip card overflow, `docs/2026-09-29-tip-card-overflow/`):**
   - `TipLayer._fit_text` gives wrapping labels in a card's extra slot the text column's width

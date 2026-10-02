@@ -14,7 +14,8 @@ from typing import Any, Iterable
 Record = dict[str, Any]
 
 #: The sector order, and the tree profile each is meant to be played at.
-SECTOR_PROFILES: dict[str, str] = {"outpost": "T0", "canyon": "T3", "switchback": "T6"}
+SECTOR_PROFILES: dict[str, str] = {"outpost": "T0", "canyon": "T3", "switchback": "T6",
+                                   "mire": "T9", "ashfall": "T12", "hive": "T15"}
 #: The special attack the targets are checked with (the bot's default); cells with another one
 #: are labelled "strategy+ability".
 DEFAULT_ABILITY = "strike"

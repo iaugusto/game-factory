@@ -76,7 +76,11 @@ var enemy_field: EnemyField
 var shot_field: ShotField
 var fx: Fx
 var hud: Hud
+var boss_bar: BossBar
 var build_bar: BuildBar
+## The bottom band for the run's controls (E9): build buttons in BUILD, the special attack in a
+## wave.
+var thumb_strip: ThumbStrip
 var barricade_field: BarricadeField
 var barricade_menu: BarricadeMenu
 ## Contextual tips: which to show (core) and the layer that shows them.
@@ -99,7 +103,7 @@ var offer_pick: bool = true
 var forced_ability: AbilityDef = null
 ## --pick: the id the pick is answered with as soon as it opens (&"": the player picks).
 var auto_pick: StringName = &""
-var _aim_pos: Vector2 = Vector2(270, 420)
+var _aim_pos: Vector2 = Vector2(270, 540)
 ## Links shown so far ("i:j:synergy"), to announce the new ones.
 var _link_keys: Dictionary = {}
 
@@ -126,6 +130,8 @@ var _perf: bool = false
 var _perf_frames: int = 0
 var _perf_time: float = 0.0
 var _perf_max_frame: float = 0.0
+## Frame times (ms) in the current --perf window, for its p95 (budgets are stated as p95).
+var _perf_frame_ms: PackedFloat32Array = PackedFloat32Array()
 var _perf_tick: float = 0.0
 var _perf_warmup: int = 60
 var _perf_last_usec: int = 0
@@ -143,7 +149,7 @@ var _demo_cast_tick: int = -1
 func _ready() -> void:
 	base_config = load(CONFIG_PATH)
 	Engine.physics_ticks_per_second = base_config.tick_rate
-	var args: Dictionary = parse_args(OS.get_cmdline_user_args())
+	var args: Dictionary = parse_args(LaunchArgs.get_args())
 	var campaign_run: bool = Session.active and not Session.wants_direct_run(args)
 	var chosen: MapDef = base_config.map_by_id(StringName(args.get("map",
 			String(Session.map_id) if campaign_run else "")))
@@ -234,6 +240,10 @@ func _build_nodes() -> void:
 	add_child(ui)
 	hud = Hud.new()
 	ui.add_child(hud)
+	boss_bar = BossBar.new()
+	ui.add_child(boss_bar)
+	thumb_strip = ThumbStrip.new()
+	ui.add_child(thumb_strip)
 	ability_button = AbilityButton.new()
 	ability_button.pressed.connect(toggle_ability)
 	ui.add_child(ability_button)
@@ -278,11 +288,16 @@ func _build_nodes() -> void:
 	ui.add_child(overlay)
 
 
-## Centre the playfield horizontally in whatever width the window has.
+## Centre the playfield horizontally in whatever width the window has; the special attack
+## sits at the right of the bottom thumb strip, and the boss bar under the HUD.
 func _layout() -> void:
 	field.position = field_origin()
 	var view: Vector2 = get_viewport_rect().size
-	ability_button.position = Vector2(view.x - AbilityButton.SIZE - 12.0, Hud.HEIGHT + 12.0)
+	ability_button.position = Vector2(view.x - AbilityButton.SIZE - 12.0,
+			view.y - ThumbStrip.HEIGHT + (ThumbStrip.HEIGHT - AbilityButton.SIZE) / 2.0)
+	var bar_w: float = minf(BossBar.MAX_WIDTH, view.x - 48.0)
+	boss_bar.size = Vector2(bar_w, BossBar.HEIGHT)
+	boss_bar.position = Vector2((view.x - bar_w) / 2.0, Hud.HEIGHT + 8.0)
 
 
 func field_origin() -> Vector2:
@@ -347,6 +362,8 @@ func start_run(run_seed: int) -> void:
 	sim.lob_landed.connect(_on_lob_landed)
 	sim.enemy_burrowed.connect(_on_burrow)
 	sim.enemy_surfaced.connect(_on_burrow)
+	sim.enemy_spawned.connect(_on_enemy_spawned)
+	sim.boss_phase.connect(_on_boss_phase)
 	sim.synergies_changed.connect(_on_synergies_changed)
 	run.phase_changed.connect(_on_phase_changed)
 	run.choose_ability(default_ability())
@@ -476,6 +493,7 @@ func sync_views(delta: float = 0.0) -> void:
 	field_view.wall_ratio = run.wall_hp() / run.wall_max()
 	field_view.wave_number = run.wave_index + 1
 	hud.sync(run, delta)
+	boss_bar.sync(run, delta)
 	ability_button.visible = run.phase == Run.Phase.WAVE and run.ability != null
 	ability_button.sync(run, aiming, delta)
 	link_view.sync(run, false, _aim_pos, delta)
@@ -993,6 +1011,26 @@ func _on_lob_landed(lob: CombatSim.Lob) -> void:
 	tips.notify(&"gate_struck")
 
 
+## A boss walks in: a banner names it (the HUD's boss bar takes over from there).
+func _on_enemy_spawned(e: CombatSim.Enemy) -> void:
+	if e.def.is_boss:
+		_banner(e.def.display_name.to_upper(), UiTheme.look.threat, &"display", 1.8)
+		fx.shake(5.0)
+
+
+## A boss's phase fired: its callout pops over it, the ground shakes, a ring bursts out.
+func _on_boss_phase(e: CombatSim.Enemy, index: int) -> void:
+	if _skipping:
+		return
+	var ph: BossPhase = e.def.phases[index]
+	var at: Vector2 = enemy_field.position_of(e)
+	fx.ring(at, UiTheme.look.threat, e.def.radius * 2.4, 0.5)
+	fx.shake(7.0)
+	if not ph.callout.is_empty():
+		fx.popup(ph.callout, at - Vector2(0, e.def.radius + 24.0), UiTheme.look.threat,
+				&"heading", 1.6, 36.0)
+
+
 ## A Burrower dived or surfaced: earth flies.
 func _on_burrow(e: CombatSim.Enemy) -> void:
 	if not _skipping:
@@ -1204,7 +1242,7 @@ func focus_rect(focus: StringName, arg: StringName = &"") -> Rect2:
 		&"empty_pad":
 			var best: int = -1
 			var best_d: float = INF
-			var aim := Vector2(config.playfield_width() / 2.0, config.wall_y * 0.62)
+			var aim := Vector2(config.playfield_width() / 2.0, config.wall_y - 327.0)
 			for p: CombatSim.Plot in run.plots:
 				if p.is_empty() and run.plot_open(p.index):
 					var d: float = p.position.distance_squared_to(aim)
@@ -1303,7 +1341,9 @@ func _sample_perf(delta: float) -> void:
 		_perf_last_usec = now
 		return
 	if _perf_last_usec > 0:
-		_perf_max_frame = maxf(_perf_max_frame, (now - _perf_last_usec) / 1000.0)
+		var ms: float = (now - _perf_last_usec) / 1000.0
+		_perf_max_frame = maxf(_perf_max_frame, ms)
+		_perf_frame_ms.append(ms)
 	_perf_last_usec = now
 	_perf_frames += 1
 	_perf_time += delta
@@ -1311,14 +1351,18 @@ func _sample_perf(delta: float) -> void:
 	_perf_peak_enemies = maxi(_perf_peak_enemies, run.combat.enemy_count())
 	_perf_peak_shots = maxi(_perf_peak_shots, run.combat.shots.size())
 	if _perf_time >= PERF_WINDOW:
-		print("PERF wave %d | fps %.1f | frame avg %.2f ms max %.2f ms | sim tick avg %.2f ms | peak enemies %d shots %d | particles %d | draw calls %d" % [
+		_perf_frame_ms.sort()
+		var p95: float = _perf_frame_ms[int(0.95 * (_perf_frame_ms.size() - 1))] \
+				if not _perf_frame_ms.is_empty() else 0.0
+		print("PERF wave %d | fps %.1f | frame avg %.2f ms p95 %.2f ms max %.2f ms | sim tick avg %.2f ms | peak enemies %d shots %d | particles %d | draw calls %d" % [
 			run.wave_index + 1, _perf_frames / _perf_time, _perf_time * 1000.0 / _perf_frames,
-			_perf_max_frame, _perf_tick * 1000.0 / _perf_frames, _perf_peak_enemies,
+			p95, _perf_max_frame, _perf_tick * 1000.0 / _perf_frames, _perf_peak_enemies,
 			_perf_peak_shots, fx.particle_count(),
 			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
 		_perf_frames = 0
 		_perf_time = 0.0
 		_perf_max_frame = 0.0
+		_perf_frame_ms.clear()
 		_perf_tick = 0.0
 		_perf_peak_enemies = 0
 		_perf_peak_shots = 0
@@ -1327,8 +1371,8 @@ func _sample_perf(delta: float) -> void:
 ## DEV ONLY (--demo): one staged wave for a special attack's tutorial clip: a pack of Drones,
 ## then a few Brutes and Skitters, down the middle path, nothing built (the attack does the
 ## work), and plenty of coins. Repair Drones get a battered gate and units to patch instead.
-## DEV ONLY (--showcase): one wave on the current map with 8 of each enemy in `ids` (loaded from
-## data/enemies/, on random open paths, one type after another) among 24 Drones, and 400
+## DEV ONLY (--showcase): one wave on the current map with 8 of each enemy in `ids` (1 of a boss;
+## loaded from data/enemies/, on random open paths, one type after another) among 24 Drones, and 400
 ## coins to build with. For meeting enemies before a sector puts them in its waves.
 static func showcase_config(base: RunConfig, ids: PackedStringArray) -> RunConfig:
 	var cfg: RunConfig = base.duplicate(false)
@@ -1347,7 +1391,7 @@ static func showcase_config(base: RunConfig, ids: PackedStringArray) -> RunConfi
 			continue
 		var entry := SpawnEntry.new()
 		entry.enemy = load(path)
-		entry.count = 8
+		entry.count = 1 if entry.enemy.is_boss else 8
 		entry.start = 3.0 + i * 6.0
 		entry.interval = 2.2
 		entry.path = -1
@@ -1388,7 +1432,7 @@ func _demo_begin() -> void:
 	if run.ability != null and run.ability.kind == AbilityDef.Kind.REPAIR:
 		var near_gate: Array[int] = []
 		for p: CombatSim.Plot in run.plots:
-			if p.position.y > config.wall_y * 0.7 and near_gate.size() < 4:
+			if p.position.y > config.wall_y - 258.0 and near_gate.size() < 4:
 				near_gate.append(p.index)
 		for i: int in near_gate.size():
 			run.build(near_gate[i], config.units[i % config.units.size()].id)

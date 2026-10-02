@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="MapDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/map_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/path_def.gd" id="path_s"]
+[ext_resource type="Script" path="res://src/defs/zone_def.gd" id="zone_s"]
+[ext_resource type="Script" path="res://src/defs/wave_def.gd" id="t_w"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_01.tres" id="w1"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_02.tres" id="w2"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_03.tres" id="w3"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_04.tres" id="w4"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_05.tres" id="w5"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_06.tres" id="w6"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_07.tres" id="w7"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_08.tres" id="w8"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_09.tres" id="w9"]
+[ext_resource type="Resource" path="res://data/waves/ashfall_10.tres" id="w10"]
+
+[sub_resource type="Resource" id="path_0"]
+script = ExtResource("path_s")
+points = PackedVector2Array(110, -10, 110, 110, 110, 380, 200, 600, 200, 980)
+spread = 30.0
+opens_at_wave = 1
+
+[sub_resource type="Resource" id="path_1"]
+script = ExtResource("path_s")
+points = PackedVector2Array(430, -10, 430, 110, 430, 380, 340, 600, 340, 980)
+spread = 30.0
+opens_at_wave = 1
+
+[sub_resource type="Resource" id="path_2"]
+script = ExtResource("path_s")
+points = PackedVector2Array(480, 560, 480, 810, 340, 920, 340, 980)
+spread = 30.0
+opens_at_wave = 4
+
+[sub_resource type="Resource" id="path_3"]
+script = ExtResource("path_s")
+points = PackedVector2Array(60, 500, 60, 800, 200, 910, 200, 980)
+spread = 30.0
+opens_at_wave = 7
+
+[sub_resource type="Resource" id="zone_0"]
+script = ExtResource("zone_s")
+kind = 1
+center = Vector2(270, 370)
+radius = 34.0
+value = 0.25
+
+[sub_resource type="Resource" id="zone_1"]
+script = ExtResource("zone_s")
+kind = 1
+center = Vector2(270, 720)
+radius = 34.0
+value = 0.25
+
+[resource]
+script = ExtResource("1_s")
+id = &"ashfall"
+biome = &"ash"
+display_name = "Ashfall"
+paths = Array[ExtResource("path_s")]([SubResource("path_0"), SubResource("path_1"), SubResource("path_2"), SubResource("path_3")])
+plots = PackedVector2Array(30, 270, 190, 270, 350, 270, 510, 270, 270, 370, 270, 520, 130, 620, 130, 740, 410, 620, 410, 740, 270, 720, 270, 840, 200, 996, 270, 996, 340, 996)
+plot_unlock_waves = PackedInt32Array(1, 1, 1, 1, 1, 1, 1, 7, 1, 4, 1, 1, 1, 1, 1)
+barricade_slots = PackedVector2Array(200, 935, 340, 935)
+zones = Array[ExtResource("zone_s")]([SubResource("zone_0"), SubResource("zone_1")])
+waves = Array[ExtResource("t_w")]([ExtResource("w1"), ExtResource("w2"), ExtResource("w3"), ExtResource("w4"), ExtResource("w5"), ExtResource("w6"), ExtResource("w7"), ExtResource("w8"), ExtResource("w9"), ExtResource("w10")])

@@ -35,9 +35,9 @@ GAME = REPO / "game"
 CLIPS = GAME / "clips"
 REVIEW = REPO / "captures" / "clips"
 
-#: The capture: the 540×960 view at ×2 (a 300-unit crop is 600 px, sampled down to OUT_SIZE).
+#: The capture: the 540×1170 view (E9) at ×2 (a 300-unit crop is 600 px, sampled down to OUT_SIZE).
 SCALE = 2.0
-WIDTH, HEIGHT = 1080, 1920
+WIDTH, HEIGHT = 1080, 2340
 #: The HUD's height above the field (Hud.HEIGHT), in view units.
 FIELD_TOP = 50.0
 FPS = 60

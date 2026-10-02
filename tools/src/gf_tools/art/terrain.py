@@ -7,7 +7,8 @@ paths blend into one trunk), burrows open where paths start, mud and ridges sit 
 are, and decoration (rocks, scrub, crystals) keeps clear of paths and plots.
 
 Each map names a biome (MapDef.biome) that picks the palette (BIOMES): a desert outpost, a
-red-rock canyon, a frozen ridge, or the neutral dusk look. Lanes are sunken (a lit lip, then the
+red-rock canyon, a frozen ridge, a swamp, black ash with ember-rimmed rocks, the infested
+hive (its creep ×2.4), or the neutral dusk look. Lanes are sunken (a lit lip, then the
 left wall's shadow across the floor), and the swarm's creep stains the lane edges in sparse,
 faint patches that thin out toward the wall, so it tells the story without competing with the
 enemies (the user judged a dense creep at the top of the field too much).
@@ -26,11 +27,30 @@ from . import palette as P
 from .props import _crystal, _rock, _tuft
 from .svg import FIELD_RASTER, Svg, smooth_path
 
+GAME_DIR = Path(__file__).resolve().parents[4] / "game"
+
+
+def field_height() -> float:
+    """The field's height in field units: RunConfig.wall_y, the gate line, as the game reads it.
+
+    The value in game/data/run_config.tres, else RunConfig's default (game/src/defs/
+    run_config.gd), so the painted ground always matches the field the game lays out (E9 made
+    it 980 for tall phones; one number, owned by the game's data).
+    """
+    for path, pattern in ((GAME_DIR / "data" / "run_config.tres", r"^wall_y = ([\d.]+)"),
+                          (GAME_DIR / "src" / "defs" / "run_config.gd",
+                           r"^@export var wall_y: float = ([\d.]+)")):
+        m = re.search(pattern, path.read_text(), re.M) if path.exists() else None
+        if m:
+            return float(m.group(1))
+    raise ValueError("RunConfig.wall_y not found")
+
+
 FIELD_W = 540.0
-FIELD_H = 860.0
+FIELD_H = field_height()
 # Half-width of a painted dirt strip (the rules' path spread is 30 plus the enemy's radius).
 STRIP = 56.0
-MAPS_DIR = Path(__file__).resolve().parents[4] / "game" / "data" / "maps"
+MAPS_DIR = GAME_DIR / "data" / "maps"
 
 Point = tuple[float, float]
 
@@ -127,6 +147,7 @@ class Biome:
     haze: str                         # the dusk haze over the swarm's end
     warm: float                       # the floodlight's warmth near the wall
     mud: tuple[str, str]              # mud patch, puddle
+    creep: float = 1.0                # how much of the swarm's creep stains the lanes (×)
 
 
 BIOMES: dict[str, Biome] = {
@@ -150,6 +171,22 @@ BIOMES: dict[str, Biome] = {
                     ("#8a96a2", "#5a6672", "#2a323a", "#c0ccd6"),
                     ("#5a7a7a", "#6a8a8a", "#4a6a70", "#7a8a9a"), True, "#1a2440", 0.06,
                     ("#1e242c", "#12161c")),
+    # Content expansion, Stage 4 (sectors 4-6).
+    "swamp": Biome(("#141c16", "#1e2a1e", "#243024"), ("#1a261c", "#26342a", "#16201a"),
+                   ("#1e261c", "#34402c", "#4a5638"), "#141a12", ("#6a7a5a", "#5a6a4a", "#8a9a70"),
+                   ("#5a6a52", "#3e4c3a", "#1e2618", "#8a9a7a"),
+                   ("#4a7a3a", "#5a8a40", "#3a6a4a", "#6a8a5a"), False, "#10241e", 0.08,
+                   ("#1a2416", "#0e160c")),
+    "ash": Biome(("#141212", "#221e1c", "#2a2420"), ("#2a2624", "#34302c", "#1c1a18"),
+                 ("#1e1a18", "#3a3430", "#56504a"), "#141110", ("#7a726a", "#5e5852", "#9a928a"),
+                 ("#5e5650", "#3e3834", "#1a1614", "#ff8a3a"),
+                 ("#4a4440", "#5a524a", "#3a3430", "#6a5a4a"), False, "#2a1410", 0.18,
+                 ("#1e1814", "#120e0c")),
+    "infested": Biome(("#1e1020", "#2a1628", "#301a2a"), ("#34182e", "#40203a", "#261222"),
+                      ("#2a1424", "#4a2a3a", "#6a3e50"), "#1e0c1a", ("#8a5a78", "#7a4a68", "#a87090"),
+                      ("#7a4a6a", "#5a2e4c", "#2a1022", "#b0306a"),
+                      ("#6a2a5a", "#7a3a6a", "#5a2a4a", "#8a3a6a"), True, "#3a1030", 0.12,
+                      ("#2a1022", "#1a0816"), 2.4),
 }
 # The swarm's creep: stain, vein, pustule.
 CREEP = ("#5a1440", "#b0306a", "#ff7ab0")
@@ -166,7 +203,7 @@ def _band(smp: list[tuple[Point, Point]], half: Callable[[int], float]) -> str:
 
 
 def _creep(s: Svg, rng: random.Random, samples: list[list[tuple[Point, Point]]],
-           burrows: list[Point]) -> None:
+           burrows: list[Point], density: float = 1.0) -> None:
     """Sparse, faint creep on the lane edges: most common near the burrows but reaching down
     the field, never within 200 of the wall, never on the lane floor's centre."""
     stain, vein, pus = CREEP
@@ -174,7 +211,7 @@ def _creep(s: Svg, rng: random.Random, samples: list[list[tuple[Point, Point]]],
         s.ellipse(cx, cy + 6, 52, 26, fill=s.radial([(0, stain, 0.6), (0.7, stain, 0.3), (1, stain, 0)]))
     for smp in samples:
         patches: list[Point] = []
-        for _ in range(max(6, len(smp) // 3)):
+        for _ in range(int(max(6, len(smp) // 3) * density)):
             i = int(len(smp) * rng.random() ** 1.6)
             (x, y), (nx, ny) = smp[min(i, len(smp) - 1)]
             if y > FIELD_H - 200:
@@ -291,7 +328,7 @@ def ground_for(m: MapShape) -> Svg:
         elif kind < 0.93 and b.crystals and clear(x, y, 10):
             _crystal(s, rng, x, y, rng.uniform(6, 11))
     burrows = [(min(max(pts[0][0], 24.0), FIELD_W - 24.0), max(pts[0][1], 4.0)) for pts in m.paths]
-    _creep(s, rng, samples, burrows)
+    _creep(s, rng, samples, burrows, b.creep)
     for cx, cy in burrows:  # burrows where each path starts, where the swarm emerges
         s.glow(cx, cy, 70, P.HIVE_GLOW, 0.45)
         s.ellipse(cx, cy, 40, 16, fill=s.radial([(0, "#050305", 1), (0.7, "#1a0c16", 1),

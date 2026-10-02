@@ -1,53 +1,61 @@
 class_name BuildBar
 extends Control
-## The BUILD phase's bar: the coming wave's preview (each enemy type's picture × its count, so
-## the player can build the right counters), a gate repair, and the big "start the wave"
-## button. It sits at the top, just under the HUD, where the field is empty before a wave; the
-## bottom belongs to the wall and its build spots. The field below stays live, so plots can be
-## tapped.
+## The BUILD phase's controls, in two parts (E9, the tall-screen layout):
+## - the coming wave's **preview** (each enemy type's picture × its count, so the player can
+##   build the right counters) in a slim panel at the top, just under the HUD, where the field
+##   is empty before a wave;
+## - **gate repair** and the big **start the wave** button in the bottom thumb strip
+##   (ThumbStrip), where a thumb reaches on a tall phone.
+## The field between stays live, so plots can be tapped.
 
 signal start_pressed
 signal repair_pressed
 
-## Height of the bar; tests check no plot sits under it.
-const HEIGHT: float = 128.0
+## Height of the top preview panel; tests check no plot sits under either part.
+const PREVIEW_HEIGHT: float = 44.0
 
 var start_button: Button
 var repair_button: Button
 var preview: HBoxContainer
+var _top: Panel
+var _bottom: Panel
 
 
 func _init() -> void:
-	set_anchors_preset(Control.PRESET_TOP_WIDE)
-	offset_top = Hud.HEIGHT
-	offset_bottom = Hud.HEIGHT + HEIGHT
+	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var panel := Panel.new()
-	panel.add_theme_stylebox_override("panel", UiTheme.panel(Color(UiTheme.look.panel, 0.9), 0,
-			Color(0, 0, 0, 0), 0))
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(panel)
-	var box := VBoxContainer.new()
-	box.set_anchors_preset(Control.PRESET_FULL_RECT)
-	box.offset_left = 14
-	box.offset_right = -14
-	box.offset_top = 6
-	box.offset_bottom = -10
-	box.add_theme_constant_override("separation", 6)
-	add_child(box)
+	_top = _panel()
+	_top.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_top.offset_top = Hud.HEIGHT
+	_top.offset_bottom = Hud.HEIGHT + PREVIEW_HEIGHT
+	add_child(_top)
 	var top := HBoxContainer.new()
+	top.set_anchors_preset(Control.PRESET_FULL_RECT)
+	top.offset_left = 14
+	top.offset_right = -14
 	top.add_theme_constant_override("separation", 6)
-	box.add_child(top)
+	_top.add_child(top)
 	var next := UiTheme.label("NEXT", &"caption", UiTheme.look.text_dim)
+	next.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(next)
 	preview = HBoxContainer.new()
 	preview.add_theme_constant_override("separation", 8)
 	preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(preview)
+	_bottom = _panel()
+	_bottom.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_bottom.offset_top = -ThumbStrip.HEIGHT
+	_bottom.offset_bottom = 0
+	add_child(_bottom)
 	var row := HBoxContainer.new()
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 14
+	row.offset_right = -14
+	row.offset_top = 12
+	row.offset_bottom = -14
 	row.add_theme_constant_override("separation", 8)
-	box.add_child(row)
+	_bottom.add_child(row)
 	repair_button = Button.new()
 	repair_button.custom_minimum_size = Vector2(130, 56)
 	UiTheme.style_button(repair_button, false, &"caption")
@@ -60,6 +68,19 @@ func _init() -> void:
 	start_button.pressed.connect(func() -> void: start_pressed.emit())
 	row.add_child(start_button)
 	visible = false
+
+
+static func _panel() -> Panel:
+	var panel := Panel.new()
+	panel.add_theme_stylebox_override("panel", UiTheme.panel(Color(UiTheme.look.panel, 0.92), 0,
+			Color(0, 0, 0, 0), 0))
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	return panel
+
+
+## The screen rectangles the bar covers (its two panels), for tests and layout checks.
+func covered_rects() -> Array[Rect2]:
+	return [_top.get_global_rect(), _bottom.get_global_rect()]
 
 
 ## Show the bar for the build phase before wave `wave_number` (1-based) of `run`.

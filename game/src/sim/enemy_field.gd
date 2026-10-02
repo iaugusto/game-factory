@@ -37,6 +37,9 @@ const FLY_HEIGHT: float = 12.0
 const FLY_BOB: float = 2.5
 const LOB_ARC: float = 90.0
 const SHIELD_COLOR := Color("#7fe0ff")
+## A boss's guard bubble (while its guards live: no harm reaches it), and the tethers drawn
+## from each guard to it.
+const GUARD_COLOR := Color("#ffd86a")
 
 var config: RunConfig
 ## enemy type id -> its MultiMeshInstance2D
@@ -49,6 +52,8 @@ var _mounds: MultiMeshInstance2D
 var _bubbles: MultiMeshInstance2D
 var _sim: CombatSim
 var _shielded: Array[CombatSim.Enemy] = []
+## Living guards of a guarded boss, for the tethers.
+var _guards: Array[CombatSim.Enemy] = []
 var _t: float = 0.0
 ## enemy id -> [last seen hp, time since the last flash started]
 var _hits: Dictionary[int, Vector2] = {}
@@ -146,6 +151,7 @@ func clear() -> void:
 		_mounds.multimesh.visible_instance_count = 0
 		_bubbles.multimesh.visible_instance_count = 0
 	_shielded.clear()
+	_guards.clear()
 	_bars.clear()
 	_drawn = 0
 	if _bar_layer != null:
@@ -158,6 +164,7 @@ func sync(sim: CombatSim, delta: float) -> void:
 	_t += delta
 	_bars.clear()
 	_shielded.clear()
+	_guards.clear()
 	_drawn = 0
 	var mounds: int = 0
 	var shadow_mm: MultiMesh = _shadows.multimesh
@@ -171,8 +178,10 @@ func sync(sim: CombatSim, delta: float) -> void:
 							Vector2(e.x, e.y)))
 					mounds += 1
 				continue
-			if e.shield > 0.05:
+			if e.shield > 0.05 or e.guards > 0:
 				_shielded.append(e)
+			if e.guarding != null and e.guarding.alive and e.guarding.guards > 0:
+				_guards.append(e)
 			var batch: MultiMeshInstance2D = _batch_for(e.def)
 			var i: int = counts.get(e.def.id, 0)
 			if i >= CAPACITY or _drawn >= CAPACITY:
@@ -207,9 +216,12 @@ func sync(sim: CombatSim, delta: float) -> void:
 	var n: int = mini(_shielded.size(), CAPACITY)
 	for i: int in n:
 		var e: CombatSim.Enemy = _shielded[i]
-		var k: float = clampf(e.shield / maxf(0.001, maxf(e.shield_max, e.shield)), 0.0, 1.0)
 		var r: float = (e.def.radius * 1.35 + 3.0) / 30.0
 		bubble_mm.set_instance_transform_2d(i, Transform2D(0.0, Vector2(r, r), 0.0, position_of(e)))
+		if e.guards > 0:
+			bubble_mm.set_instance_color(i, Color(GUARD_COLOR, 0.8 + 0.2 * sin(_t * 5.0)))
+			continue
+		var k: float = clampf(e.shield / maxf(0.001, maxf(e.shield_max, e.shield)), 0.0, 1.0)
 		bubble_mm.set_instance_color(i, Color(SHIELD_COLOR, 0.35 + 0.6 * k))
 	bubble_mm.visible_instance_count = n
 	_bar_layer.queue_redraw()
@@ -230,6 +242,9 @@ func _flash(e: CombatSim.Enemy, delta: float) -> float:
 
 func _draw_bars() -> void:
 	var ci: Node2D = _bar_layer
+	for g: CombatSim.Enemy in _guards:
+		ci.draw_dashed_line(position_of(g), position_of(g.guarding), Color(GUARD_COLOR, 0.55), 2.0,
+				7.0)
 	if _sim != null:
 		for lob: CombatSim.Lob in _sim.lobs:
 			var t: float = clampf(lob.t / lob.duration, 0.0, 1.0)

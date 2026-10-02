@@ -84,5 +84,12 @@ extends Resource
 ## attack_interval for wall_damage (it lands after `lob_time` s). 0 = walks to the gate.
 @export var siege_range: float = 0.0
 @export var lob_time: float = 0.9
+
+@export_group("Boss")
+## A boss: the HUD shows its HP bar (with a tick per phase) while it is on the field, and it
+## closes its sector's last wave.
+@export var is_boss: bool = false
+## Fired once each, in order, as its HP falls (BossPhase.at_hp_fraction, highest first).
+@export var phases: Array[BossPhase] = []
 @export_group("")
 @export var color: Color = Color.WHITE

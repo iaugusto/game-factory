@@ -17,39 +17,39 @@
 
 [sub_resource type="Resource" id="path_0"]
 script = ExtResource("path_s")
-points = PackedVector2Array(110, -10, 110, 170, 220, 350, 270, 470, 270, 860)
+points = PackedVector2Array(110, -10, 110, 110, 110, 290, 220, 470, 270, 590, 270, 980)
 spread = 30.0
 opens_at_wave = 1
 
 [sub_resource type="Resource" id="path_1"]
 script = ExtResource("path_s")
-points = PackedVector2Array(430, -10, 430, 170, 320, 350, 270, 470, 270, 860)
+points = PackedVector2Array(430, -10, 430, 110, 430, 290, 320, 470, 270, 590, 270, 980)
 spread = 30.0
 opens_at_wave = 1
 
 [sub_resource type="Resource" id="path_2"]
 script = ExtResource("path_s")
-points = PackedVector2Array(-10, 380, 70, 450, 85, 600, 85, 860)
+points = PackedVector2Array(-10, 500, 70, 570, 85, 720, 85, 980)
 spread = 30.0
 opens_at_wave = 4
 
 [sub_resource type="Resource" id="path_3"]
 script = ExtResource("path_s")
-points = PackedVector2Array(550, 380, 470, 450, 455, 600, 455, 860)
+points = PackedVector2Array(550, 500, 470, 570, 455, 720, 455, 980)
 spread = 30.0
 opens_at_wave = 7
 
 [sub_resource type="Resource" id="zone_mud"]
 script = ExtResource("zone_s")
 kind = 0
-center = Vector2(270, 590)
+center = Vector2(270, 710)
 radius = 60.0
 value = 0.6
 
 [sub_resource type="Resource" id="zone_ridge"]
 script = ExtResource("zone_s")
 kind = 1
-center = Vector2(175, 480)
+center = Vector2(175, 600)
 radius = 34.0
 value = 0.25
 
@@ -59,8 +59,8 @@ id = &"canyon"
 biome = &"canyon"
 display_name = "Canyon Pass"
 paths = Array[ExtResource("path_s")]([SubResource("path_0"), SubResource("path_1"), SubResource("path_2"), SubResource("path_3")])
-plots = PackedVector2Array(270, 90, 30, 210, 510, 210, 270, 250, 175, 480, 365, 480, 180, 640, 360, 640, 180, 775, 360, 775, 165, 420, 375, 420, 85, 876, 270, 876, 455, 876)
+plots = PackedVector2Array(270, 210, 30, 330, 510, 330, 270, 370, 175, 600, 365, 600, 180, 760, 360, 760, 180, 895, 360, 895, 165, 540, 375, 540, 85, 996, 270, 996, 455, 996)
 plot_unlock_waves = PackedInt32Array(1, 1, 1, 1, 1, 1, 1, 1, 4, 7, 4, 7, 1, 1, 1)
-barricade_slots = PackedVector2Array(270, 770, 85, 770, 455, 770)
+barricade_slots = PackedVector2Array(270, 890, 85, 890, 455, 890)
 zones = Array[ExtResource("zone_s")]([SubResource("zone_mud"), SubResource("zone_ridge")])
 waves = Array[ExtResource("t_w")]([ExtResource("w1"), ExtResource("w2"), ExtResource("w3"), ExtResource("w4"), ExtResource("w5"), ExtResource("w6"), ExtResource("w7"), ExtResource("w8"), ExtResource("w9"), ExtResource("w10")])

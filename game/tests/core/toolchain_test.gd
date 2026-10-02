@@ -9,6 +9,7 @@ func test_engine_is_pinned_minor() -> void:
 	assert_int(info["minor"]).is_equal(7)
 
 
-func test_base_resolution_is_portrait_540x960() -> void:
+## E9: the design is the tall 19.5:9 shape (540×1170); 16:9 screens get extra width (expand).
+func test_base_resolution_is_portrait_540x1170() -> void:
 	assert_int(ProjectSettings.get_setting("display/window/size/viewport_width")).is_equal(540)
-	assert_int(ProjectSettings.get_setting("display/window/size/viewport_height")).is_equal(960)
+	assert_int(ProjectSettings.get_setting("display/window/size/viewport_height")).is_equal(1170)

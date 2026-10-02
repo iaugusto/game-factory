@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="EnemyDef" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_s"]
+[ext_resource type="Script" path="res://src/defs/boss_phase.gd" id="2_p"]
+[ext_resource type="Resource" path="res://data/enemies/warden.tres" id="3_warden"]
+[ext_resource type="Resource" path="res://data/enemies/wasp.tres" id="4_wasp"]
+[ext_resource type="Resource" path="res://data/enemies/mender.tres" id="5_mender"]
+
+[sub_resource type="Resource" id="ph_guard"]
+script = ExtResource("2_p")
+at_hp_fraction = 1.0
+callout = "SHIELDED — KILL ITS WARDENS"
+spawn = ExtResource("3_warden")
+spawn_count = 3
+keep_pace = true
+guard = true
+
+[sub_resource type="Resource" id="ph_sky"]
+script = ExtResource("2_p")
+at_hp_fraction = 0.66
+callout = "THE SKY SWARMS"
+spawn = ExtResource("4_wasp")
+spawn_count = 10
+pause_seconds = 1.0
+
+[sub_resource type="Resource" id="ph_mend"]
+script = ExtResource("2_p")
+at_hp_fraction = 0.33
+callout = "THE HIVE MENDS IT"
+spawn = ExtResource("5_mender")
+spawn_count = 3
+keep_pace = true
+pause_seconds = 1.5
+
+[resource]
+script = ExtResource("1_s")
+id = &"overmind"
+display_name = "The Overmind"
+description = "Unharmed while its Wardens live. Then it calls Wasps, then Menders."
+hp = 600.0
+speed = 7.0
+wall_damage = 60.0
+attack_interval = 3.0
+gold = 80
+radius = 44.0
+color = Color(0.55, 0.3, 0.85, 1)
+weak_to = 4
+resists = 2
+armor = 3.0
+threat = 360.0
+is_boss = true
+phases = Array[ExtResource("2_p")]([SubResource("ph_guard"), SubResource("ph_sky"), SubResource("ph_mend")])

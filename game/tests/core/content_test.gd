@@ -78,6 +78,40 @@ func test_each_stage2_enemy_carries_its_one_rule() -> void:
 			.is_greater(bomb.siege_range * 0.5)
 
 
+## Stage 3: every boss has phases listed from the highest threshold down, each of which does
+## something; spawns are real, non-boss enemies; only a phase with spawns can guard.
+func test_every_boss_is_well_formed() -> void:
+	var bosses: Dictionary = {}
+	for e: EnemyDef in _enemies():
+		if not e.is_boss:
+			assert_array(e.phases).override_failure_message("%s: phases but no boss" % e.id) \
+					.is_empty()
+			continue
+		bosses[e.id] = e
+		assert_array(e.phases).override_failure_message("%s has no phases" % e.id).is_not_empty()
+		var last: float = INF
+		for ph: BossPhase in e.phases:
+			var tag: String = "%s @%.2f" % [e.id, ph.at_hp_fraction]
+			assert_float(ph.at_hp_fraction).override_failure_message(tag).is_between(0.05, 1.0)
+			assert_bool(ph.at_hp_fraction < last).override_failure_message(tag + ": order") \
+					.is_true()
+			last = ph.at_hp_fraction
+			var spawns: bool = ph.spawn != null and ph.spawn_count > 0
+			assert_bool(spawns or ph.armor_delta != 0.0 or ph.speed_mult != 1.0) \
+					.override_failure_message(tag + ": does nothing").is_true()
+			if spawns:
+				assert_bool(ph.spawn.is_boss).override_failure_message(tag).is_false()
+				assert_int(ph.spawn_count).override_failure_message(tag).is_less_equal(16)
+			assert_bool(spawns or not (ph.guard or ph.keep_pace)) \
+					.override_failure_message(tag + ": guards without spawns").is_true()
+			assert_int(ph.callout.length()).override_failure_message(tag).is_less_equal(32)
+	for id: StringName in [&"boss", &"broodmother", &"titan", &"overmind"]:
+		assert_bool(bosses.has(id)).override_failure_message("%s missing" % id).is_true()
+	# The user's call: the Queen breaks a base gate in two strikes, three with any upgrade.
+	var queen: EnemyDef = bosses[&"boss"]
+	assert_float(queen.wall_damage).is_equal(base.wall_hp / 2.0)
+
+
 func test_every_map_loads_with_ten_waves() -> void:
 	assert_int(base.maps.size()).is_greater_equal(2)
 	assert_object(base.map).is_same(base.maps[0])
@@ -109,7 +143,7 @@ func test_boss_only_in_final_wave() -> void:
 		for i: int in c.waves.size():
 			var has_boss: bool = false
 			for s: SpawnEntry in c.waves[i].spawns:
-				has_boss = has_boss or s.enemy.id == &"boss"
+				has_boss = has_boss or s.enemy.is_boss
 			assert_bool(has_boss).override_failure_message("%s wave %d" % [c.map.id, i + 1]) \
 					.is_equal(i == c.waves.size() - 1)
 
@@ -126,19 +160,21 @@ func test_every_modifier_key_exists() -> void:
 
 
 func test_the_skill_tree_is_well_formed() -> void:
-	# Three branches (research §4.3), each tiers 1..5 with no gap or duplicate, costs rising
-	# 1, 1, 2, 2, 3 (27 stars for the whole tree), and a title and description on every node.
+	# Three branches (research §4.3), each tiers 1..6 with no gap or duplicate, costs rising
+	# 1, 1, 2, 2, 3, 3 (36 stars for the whole tree, of 18 a player can earn: the tree is a
+	# choice), and a title and description on every node. Tier 6 came with sectors 4-6 (E8).
 	var tree: SkillTreeDef = cfg.skill_tree
 	assert_int(tree.branch_titles.size()).is_equal(3)
 	for b: int in tree.branch_titles.size():
 		var nodes: Array[SkillDef] = tree.branch_skills(b)
-		assert_int(nodes.size()).is_equal(5)
+		assert_int(nodes.size()).is_equal(6)
 		for i: int in nodes.size():
 			assert_int(nodes[i].tier).is_equal(i + 1)
-			assert_int(nodes[i].cost).is_equal([1, 1, 2, 2, 3][i])
+			assert_int(nodes[i].cost).is_equal([1, 1, 2, 2, 3, 3][i])
 			assert_str(nodes[i].title).is_not_empty()
 			assert_str(nodes[i].description).is_not_empty()
-	assert_int(tree.total_cost()).is_equal(27)
+	assert_int(tree.total_cost()).is_equal(36)
+	assert_int(base.maps.size() * 3).is_equal(18)
 	# The user's own nodes are in it.
 	assert_str(String(tree.skill_by_id(&"last_stand").key)).is_equal("death_blast")
 	assert_float(tree.skill_by_id(&"scavengers").value).is_equal_approx(0.1, 1e-6)
@@ -147,10 +183,10 @@ func test_the_skill_tree_is_well_formed() -> void:
 func test_counts() -> void:
 	assert_int(cfg.units.size()).is_equal(6)
 	assert_int(cfg.cards.size()).is_equal(12)
-	assert_int(cfg.skill_tree.skills.size()).is_equal(15)
+	assert_int(cfg.skill_tree.skills.size()).is_equal(18)
 	assert_int(cfg.plot_count()).is_equal(11)
 	assert_int(base.for_map(base.maps[1]).plot_count()).is_equal(15)
-	assert_int(base.maps.size()).is_equal(3)
+	assert_int(base.maps.size()).is_equal(6)
 
 
 func test_ids_are_unique() -> void:
@@ -170,9 +206,9 @@ func test_all_enemies_crates_and_attacks_are_used() -> void:
 			crates[c.crate.id] = true
 		for sp: SpawnEntry in w.spawns:
 			in_waves[sp.enemy.id] = true
-	assert_int(in_waves.size()).is_equal(8)
-	# + the four Stage 2 enemies, which sectors 4-6 (Stage 4) put in waves.
-	assert_int(_enemies().size()).is_equal(12)
+	# Every enemy is in some wave (sectors 4-6 bring the Stage 2 enemies and the bosses).
+	assert_int(in_waves.size()).is_equal(15)
+	assert_int(_enemies().size()).is_equal(15)
 	assert_int(crates.size()).is_equal(3)
 	var attacks: Dictionary = {}
 	for u: UnitDef in cfg.units:
@@ -239,9 +275,12 @@ func test_paths_run_down_from_a_portal_to_the_gate() -> void:
 				assert_float(pts[k].y).override_failure_message("%s turns back up" % tag) \
 						.is_greater(pts[k - 1].y)
 			assert_float(pts[pts.size() - 1].y).override_failure_message(tag).is_equal(c.wall_y)
-			# The portal: at the top of the field, or on a side edge.
+			# The portal: at the top of the field or on a side edge; or a burrow breaking open
+			# mid-field (Ashfall), only as a later breach and well up the field from the gate.
 			var start: Vector2 = pts[0]
-			assert_bool(start.y <= 0.0 or start.x <= 0.0 or start.x >= c.playfield_width()) \
+			var edge: bool = start.y <= 0.0 or start.x <= 0.0 or start.x >= c.playfield_width()
+			var breach: bool = c.map.paths[i].opens_at_wave > 1 and start.y <= c.wall_y - 300.0
+			assert_bool(edge or breach) \
 					.override_failure_message("%s starts inside the field" % tag).is_true()
 			assert_int(c.map.paths[i].opens_at_wave).is_between(1, c.waves.size())
 			open_at_start = open_at_start or c.map.paths[i].opens_at_wave == 1
@@ -388,15 +427,24 @@ func test_waves_get_more_threatening() -> void:
 
 
 func test_every_sector_is_harder_than_the_one_before() -> void:
-	# The campaign escalates: each sector's waves carry more threat than the same waves of the
-	# sector before it (the skill tree grows between them).
+	# The campaign escalates (the skill tree grows between sectors): each sector's waves carry
+	# more threat in all than the sector before it's, and so does its boss wave. Not wave by
+	# wave: sectors 4-6 thin the familiar enemies early to make room for their new ones (E8
+	# Stage 4), and threat within a sector already rises every wave (the test above).
 	for k: int in range(1, base.maps.size()):
 		var a: RunConfig = base.for_map(base.maps[k - 1])
 		var b: RunConfig = base.for_map(base.maps[k])
+		var ta: float = 0.0
+		var tb: float = 0.0
 		for i: int in a.waves.size():
-			assert_float(WaveSchedule.threat(b.waves[i])).override_failure_message(
-					"%s wave %d is not harder than %s's" % [b.map.id, i + 1, a.map.id]) \
-					.is_greater(WaveSchedule.threat(a.waves[i]))
+			ta += WaveSchedule.threat(a.waves[i])
+			tb += WaveSchedule.threat(b.waves[i])
+		assert_float(tb).override_failure_message("%s is not harder than %s" % [b.map.id,
+				a.map.id]).is_greater(ta)
+		var last: int = a.waves.size() - 1
+		assert_float(WaveSchedule.threat(b.waves[last])).override_failure_message(
+				"%s's boss wave is not harder than %s's" % [b.map.id, a.map.id]) \
+				.is_greater(WaveSchedule.threat(a.waves[last]))
 
 
 func test_every_unit_offers_overcharge_and_its_own_trait() -> void:

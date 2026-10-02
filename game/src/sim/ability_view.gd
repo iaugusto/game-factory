@@ -14,7 +14,7 @@ var run: Run
 ## One instance draws the links (under the plots), another the attacks and aim (over enemies).
 var links_only: bool = false
 var armed: bool = false
-var aim: Vector2 = Vector2(270, 400)
+var aim: Vector2 = Vector2(270, 520)
 ## Whether a mouse has moved (desktop): only then does a preview follow it. On touch there is
 ## no hover, so armed shows a pulsing frame around the field instead.
 var aim_seen: bool = false

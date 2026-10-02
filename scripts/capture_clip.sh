@@ -18,7 +18,7 @@ mkdir -p "$OUT_DIR"
 AVI="$OUT_DIR/$NAME.avi"
 
 "$GODOT_BIN" --path "$ROOT/game" --write-movie "$AVI" --fixed-fps "$FPS" \
-  --resolution 540x960 --quit-after $(( SECONDS_LONG * FPS )) -- "$@" >/dev/null
+  --resolution 540x1170 --quit-after $(( SECONDS_LONG * FPS )) -- "$@" >/dev/null
 
 FFMPEG="${FFMPEG_BIN:-$(command -v ffmpeg || true)}"
 if [[ -n "$FFMPEG" && -x "$FFMPEG" ]]; then

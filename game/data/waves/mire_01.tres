@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="WaveDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/wave_def.gd" id="w"]
+[ext_resource type="Script" path="res://src/defs/spawn_entry.gd" id="se"]
+[ext_resource type="Script" path="res://src/defs/crate_spawn.gd" id="cs"]
+[ext_resource type="Resource" path="res://data/enemies/grunt.tres" id="e_grunt"]
+[ext_resource type="Resource" path="res://data/crates/supply.tres" id="c_supply"]
+
+[sub_resource type="Resource" id="s0"]
+script = ExtResource("se")
+enemy = ExtResource("e_grunt")
+count = 14
+start = 2.0
+interval = 1.6
+path = -1
+
+[sub_resource type="Resource" id="c0"]
+script = ExtResource("cs")
+crate = ExtResource("c_supply")
+time = 3.0
+path = -1
+
+[sub_resource type="Resource" id="c1"]
+script = ExtResource("cs")
+crate = ExtResource("c_supply")
+time = 15.0
+path = -1
+
+[resource]
+script = ExtResource("w")
+spawns = Array[ExtResource("se")]([SubResource("s0")])
+crates = Array[ExtResource("cs")]([SubResource("c0"), SubResource("c1")])
+hp_scale = 1.542
+speed_scale = 1.0

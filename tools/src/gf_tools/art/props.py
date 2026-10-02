@@ -11,7 +11,6 @@ from . import palette as P
 from .svg import FIELD_RASTER, Svg, ellipse_points, polar, smooth_path
 
 FIELD_W = 540.0
-FIELD_H = 860.0
 def _rock(s: Svg, rng: random.Random, x: float, y: float, r: float,
           colors: tuple[str, str, str, str] = (P.ROCK_LIGHT, P.ROCK, "#2a2724", "#8a8378")) -> None:
     """A lit rock; `colors` is (light, mid, dark, rim highlight), so each biome has its stone."""

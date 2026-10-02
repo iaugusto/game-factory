@@ -17,33 +17,33 @@
 
 [sub_resource type="Resource" id="path_0"]
 script = ExtResource("path_s")
-points = PackedVector2Array(440, -10, 440, 70, 100, 250, 100, 320, 440, 500, 440, 560, 270, 700, 270, 860)
+points = PackedVector2Array(440, -10, 440, 110, 440, 190, 100, 370, 100, 440, 440, 620, 440, 680, 270, 820, 270, 980)
 spread = 30.0
 opens_at_wave = 1
 
 [sub_resource type="Resource" id="path_1"]
 script = ExtResource("path_s")
-points = PackedVector2Array(440, -10, 440, 70, 100, 250, 100, 320, 100, 860)
+points = PackedVector2Array(440, -10, 440, 110, 440, 190, 100, 370, 100, 440, 100, 980)
 spread = 30.0
 opens_at_wave = 3
 
 [sub_resource type="Resource" id="path_2"]
 script = ExtResource("path_s")
-points = PackedVector2Array(550, 610, 470, 680, 470, 860)
+points = PackedVector2Array(550, 730, 470, 800, 470, 980)
 spread = 30.0
 opens_at_wave = 6
 
 [sub_resource type="Resource" id="zone_mud"]
 script = ExtResource("zone_s")
 kind = 0
-center = Vector2(270, 410)
+center = Vector2(270, 530)
 radius = 55.0
 value = 0.6
 
 [sub_resource type="Resource" id="zone_ridge"]
 script = ExtResource("zone_s")
 kind = 1
-center = Vector2(300, 290)
+center = Vector2(300, 410)
 radius = 32.0
 value = 0.25
 
@@ -53,8 +53,8 @@ id = &"switchback"
 biome = &"tundra"
 display_name = "Switchback Ridge"
 paths = Array[ExtResource("path_s")]([SubResource("path_0"), SubResource("path_1"), SubResource("path_2")])
-plots = PackedVector2Array(150, 110, 500, 220, 300, 290, 400, 300, 230, 480, 500, 420, 30, 420, 190, 620, 360, 760, 180, 770, 100, 876, 270, 876, 470, 876)
+plots = PackedVector2Array(150, 230, 500, 340, 300, 410, 400, 420, 230, 600, 500, 540, 30, 540, 190, 740, 360, 880, 180, 890, 100, 996, 270, 996, 470, 996)
 plot_unlock_waves = PackedInt32Array(1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 6)
-barricade_slots = PackedVector2Array(270, 770, 100, 770, 470, 770)
+barricade_slots = PackedVector2Array(270, 890, 100, 890, 470, 890)
 zones = Array[ExtResource("zone_s")]([SubResource("zone_mud"), SubResource("zone_ridge")])
 waves = Array[ExtResource("t_w")]([ExtResource("w1"), ExtResource("w2"), ExtResource("w3"), ExtResource("w4"), ExtResource("w5"), ExtResource("w6"), ExtResource("w7"), ExtResource("w8"), ExtResource("w9"), ExtResource("w10")])

@@ -25,7 +25,8 @@ var _save: SaveData = null
 
 
 func _ready() -> void:
-	var args: Dictionary = RunController.parse_args(OS.get_cmdline_user_args())
+	DesktopWindow.fit(get_window())
+	var args: Dictionary = RunController.parse_args(LaunchArgs.get_args())
 	if args.has("save"):
 		save_path = String(args["save"])
 

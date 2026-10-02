@@ -8,7 +8,7 @@ extends Control
 signal changed
 signal closed
 
-const NODE_SIZE := Vector2(156, 84)
+const NODE_SIZE := Vector2(156, 74)
 
 var tree: SkillTreeDef
 var stars_label: Label

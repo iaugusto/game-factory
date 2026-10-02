@@ -186,12 +186,14 @@ func test_autoplay_ignores_the_pointer() -> void:
 
 func test_build_bar_covers_no_build_spot() -> void:
 	assert_bool(scene.build_bar.visible).is_true()
-	var bar: Rect2 = scene.build_bar.get_global_rect()
-	assert_float(bar.size.y).is_greater(0.0)
-	for plot: CombatSim.Plot in scene.run.plots:
-		var r := Rect2(_screen(plot.position) - Vector2(28, 28), Vector2(56, 56))
-		assert_bool(bar.intersects(r)).override_failure_message(
-				"build bar covers plot %d" % plot.index).is_false()
+	var covered: Array[Rect2] = scene.build_bar.covered_rects()
+	covered.append(scene.thumb_strip.get_global_rect())
+	for bar: Rect2 in covered:
+		assert_float(bar.size.y).is_greater(0.0)
+		for plot: CombatSim.Plot in scene.run.plots:
+			var r := Rect2(_screen(plot.position) - Vector2(28, 28), Vector2(56, 56))
+			assert_bool(bar.intersects(r)).override_failure_message(
+					"a bar covers plot %d" % plot.index).is_false()
 
 
 func test_views_mirror_core_state() -> void:
@@ -533,6 +535,42 @@ func test_the_stage2_enemies_render_mounds_bubbles_and_globs() -> void:
 			seen["flyer"] = seen["flyer"] or e.def.flying
 	for k: String in seen:
 		assert_bool(seen[k]).override_failure_message("never saw a %s" % k).is_true()
+
+
+func test_a_boss_shows_its_bar_its_guard_bubble_and_its_phases() -> void:
+	var cfg: RunConfig = RunController.showcase_config(scene.config,
+			PackedStringArray(["overmind"]))
+	cfg.wall_hp = 1e6
+	scene.config = cfg
+	scene.start_run(7)
+	scene.start_wave()
+	var sim: CombatSim = scene.run.combat
+	_tick_until(func() -> bool: return not sim.bosses.is_empty())
+	scene.sync_views(1.0 / 60.0)
+	var bar: BossBar = scene.boss_bar
+	var boss: CombatSim.Enemy = sim.bosses[0]
+	assert_bool(bar.visible).is_true()
+	assert_str(bar.name_label.text).is_equal("THE OVERMIND")
+	assert_str(bar.status_label.text).is_equal("GUARDED ×3")
+	assert_int(scene.enemy_field.bubble_count()).is_greater_equal(1)
+	assert_bool(bar.get_global_rect().intersects(scene.ability_button.get_global_rect())).is_false()
+	for group: Array in sim.path_enemies:
+		for e: CombatSim.Enemy in group.duplicate():
+			if e.guarding == boss:
+				sim._apply_damage(e, 1e6)
+	scene.sync_views(1.0 / 60.0)
+	assert_str(bar.status_label.text).is_empty()
+	sim._apply_damage(boss, boss.max_hp * 0.4)
+	scene.sync_views(1.0 / 60.0)
+	assert_int(bar.passed_ticks()).is_equal(1)
+	var wasps: int = 0
+	for group: Array in sim.path_enemies:
+		for e: CombatSim.Enemy in group:
+			wasps += 1 if e.def.id == &"wasp" else 0
+	assert_int(wasps).is_equal(10)
+	sim._apply_damage(boss, 1e6)
+	scene.sync_views(1.0 / 60.0)
+	assert_bool(bar.visible).is_false()
 
 
 func test_crate_views_are_pooled_not_leaked() -> void:

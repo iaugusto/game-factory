@@ -88,3 +88,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# B5: written by scripts/build_android.sh --renderer=compat for one export, then deleted
+game/override.cfg

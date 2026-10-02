@@ -24,6 +24,9 @@ var tip_layer: TipLayer
 var settings: PanelContainer
 var tips_button: Button
 var _list: VBoxContainer
+## The sector cards' scroller (for tests: the newest open sector is scrolled into view).
+var scroll: ScrollContainer
+var _scroll_target: Control = null
 ## Frames to wait before showing a tip, so the layout (and every spotlight) has settled.
 var _tip_wait: int = 2
 
@@ -31,7 +34,7 @@ var _tip_wait: int = 2
 func _ready() -> void:
 	if config != null:
 		return  # built already (tests build before adding)
-	var args: Dictionary = RunController.parse_args(OS.get_cmdline_user_args())
+	var args: Dictionary = RunController.parse_args(LaunchArgs.get_args())
 	if Session.wants_direct_run(args):
 		get_tree().change_scene_to_file.call_deferred(Session.RUN_SCENE)
 		return
@@ -72,10 +75,15 @@ func build(cfg: RunConfig) -> void:
 	stars_label = UiTheme.label("", &"label", UiTheme.look.coin)
 	total_row.add_child(stars_label)
 	box.add_child(total_row)
+	# Six sectors don't fit a phone screen: the cards scroll (vertical only, by drag or wheel).
+	scroll = ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(scroll)
 	_list = VBoxContainer.new()
 	_list.add_theme_constant_override("separation", 12)
-	_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(_list)
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_list)
 	tree_button = Button.new()
 	tree_button.custom_minimum_size = Vector2(0, 62)
 	UiTheme.style_button(tree_button, false, &"label")
@@ -104,8 +112,13 @@ func refresh() -> void:
 		_list.remove_child(child)
 		child.free()
 	play_buttons.clear()
+	var newest: Control = null
 	for i: int in config.maps.size():
-		_list.add_child(_sector_card(i, save.campaign))
+		var card: Control = _sector_card(i, save.campaign)
+		_list.add_child(card)
+		if save.campaign.is_unlocked(config.maps, i):
+			newest = card
+	_scroll_target = newest  # the sector the player is on, scrolled into view once laid out
 	var total: int = save.campaign.stars_total()
 	stars_label.text = "%d / %d" % [total, config.maps.size() * 3]
 	var free: int = save.stars_free(config.skill_tree)
@@ -117,6 +130,11 @@ func refresh() -> void:
 
 
 func _process(_delta: float) -> void:
+	# The cards only have their sizes after the containers sort (a frame or two after refresh).
+	if _scroll_target != null and is_instance_valid(_scroll_target) \
+			and _scroll_target.size.y > 0.0 and _list.size.y > scroll.size.y * 0.5:
+		scroll.ensure_control_visible(_scroll_target)
+		_scroll_target = null
 	if _tip_wait > 0:
 		_tip_wait -= 1
 		return

@@ -38,6 +38,11 @@ extends RefCounted
 ##   mud and escorts; ground effects miss them), Wardens shield everyone near them
 ##   (Enemy.shield soaks damage first), Burrowers dive underground (untargetable, under the
 ##   barricade), and Bombardiers stop short of the gate and lob globs at it (Lob).
+## - **Bosses** (EnemyDef.is_boss, Stage 3): each BossPhase fires once, in order, as the boss's
+##   HP falls past its threshold (_check_phases, from _apply_damage; 1.0 fires on arrival). A
+##   phase spawns a brood or an escort just ahead of it (inserted sorted, like a Splitter's
+##   brood), changes its armour or speed, or stops it for a moment (Enemy.pause). Guards (a
+##   phase's spawns with BossPhase.guard) make it take no damage while any of them lives.
 ##
 ## Coins earned and wall damage dealt are accumulated in `pending_gold` / `pending_wall_damage`
 ## and drained by Run every tick: the run, not the sim, owns the wall and the purse.
@@ -91,6 +96,8 @@ signal enemy_burrowed(enemy: Enemy)
 signal enemy_surfaced(enemy: Enemy)
 ## A Warden's shield soaked (part of) a hit.
 signal shield_hit(enemy: Enemy, absorbed: float)
+## A boss's phase fired (its spawns have been spawned; phase is boss.def.phases[index]).
+signal boss_phase(boss: Enemy, index: int)
 
 ## Reload countdowns within this of zero count as ready, so float drift in `cooldown - dt`
 ## never delays a shot by a tick (a 0.5 s reload fires every 30 ticks at 60 Hz, exactly).
@@ -150,6 +157,14 @@ class Enemy:
 	var burrow_timer: float = 0.0
 	## Bombardiers: stopped at siege range, lobbing at the gate (also `sieging`).
 	var lobbing: bool = false
+	## Bosses: the next phase to fire (an index into def.phases), armour added by phases, seconds
+	## left stopped by a phase (like stun, but not frozen), and how many of its guards live.
+	var next_phase: int = 0
+	var armor_bonus: float = 0.0
+	var pause: float = 0.0
+	var guards: int = 0
+	## The boss this enemy guards (null: none).
+	var guarding: Enemy = null
 
 	func pos() -> Vector2:
 		return Vector2(x, y)
@@ -165,6 +180,14 @@ class Enemy:
 	## not flying.
 	func on_ground() -> bool:
 		return surface_d < 0.0 and not def.flying
+
+	## A boss's guards live: every hit on it is void.
+	func guarded() -> bool:
+		return guards > 0
+
+	## Armour on top of its def's: an elite's and its boss phases'.
+	func extra_armor() -> float:
+		return armor_bonus + (elite.armor_bonus if elite != null else 0.0)
 
 
 class Crate:
@@ -355,6 +378,8 @@ var lobs: Array[Lob] = []
 ## Wardens on the field (kept by spawn and kill), so the shield pass costs nothing without them.
 var _wardens: int = 0
 var _shield_clock: float = 0.0
+## Bosses on the field, in spawn order (kept by spawn and kill; the HUD's boss bar reads it).
+var bosses: Array[Enemy] = []
 
 var time: float = 0.0
 ## Unit fire-rate boost from a boost crate: multiplier and seconds left.
@@ -442,6 +467,7 @@ func begin_wave(wave: WaveDef, wave_number: int = 1) -> void:
 	lobs.clear()
 	_wardens = 0
 	_shield_clock = 0.0
+	bosses.clear()
 	_clear_abilities()
 	for plot: Plot in plots:
 		plot.cooldown = 0.0
@@ -610,6 +636,7 @@ func _spawn_due() -> void:
 			_place_enemy(e)
 			path_enemies[e.path].append(e)
 			enemy_spawned.emit(e)
+			_check_phases(e)
 		else:
 			var c := Crate.new()
 			c.id = _take_id()
@@ -626,6 +653,8 @@ func _arrive(e: Enemy) -> void:
 	e.burrow_timer = e.def.burrow_every
 	if _is_warden(e.def):
 		_wardens += 1
+	if e.def.is_boss:
+		bosses.append(e)
 
 
 static func _is_warden(def: EnemyDef) -> bool:
@@ -680,6 +709,9 @@ func _move_enemies(dt: float) -> void:
 			if e.stun > 0.0:
 				e.stun = maxf(0.0, e.stun - dt)
 				continue  # frozen solid: no walking, no striking
+			if e.pause > 0.0:
+				e.pause = maxf(0.0, e.pause - dt)
+				continue  # a boss phase playing out
 			if e.sieging and e.at_barricade and not _blocks(e):
 				# The barricade broke (or was never rebuilt): walk on.
 				e.sieging = false
@@ -1443,8 +1475,7 @@ func _hit_crate(c: Crate, dmg: float) -> void:
 func _damage_enemy(e: Enemy, raw: float, type: UnitDef.DamageType, pierce: float = 0.0) -> void:
 	if not e.alive:
 		return
-	var dmg: float = effective_damage(config, e.def, raw, type, pierce,
-			e.elite.armor_bonus if e.elite else 0.0)
+	var dmg: float = effective_damage(config, e.def, raw, type, pierce, e.extra_armor())
 	if dmg > raw + 1e-4:
 		enemy_hit.emit(e, dmg, 1)
 	elif dmg < raw - 1e-4:
@@ -1452,10 +1483,10 @@ func _damage_enemy(e: Enemy, raw: float, type: UnitDef.DamageType, pierce: float
 	_apply_damage(e, dmg)
 
 
-## Take `dmg` off `e` as is (past the chart): its shield soaks it first, then hp. A kill pays
-## out and may split.
+## Take `dmg` off `e` as is (past the chart): a guarded boss takes none, its shield soaks it
+## first, then hp. A kill pays out and may split; a boss's falling hp may fire its phases.
 func _apply_damage(e: Enemy, dmg: float) -> void:
-	if not e.alive:
+	if not e.alive or e.guards > 0:
 		return
 	if e.shield > 0.0:
 		var soak: float = minf(e.shield, dmg)
@@ -1469,6 +1500,10 @@ func _apply_damage(e: Enemy, dmg: float) -> void:
 		e.alive = false
 		if _is_warden(e.def):
 			_wardens -= 1
+		if e.def.is_boss:
+			bosses.erase(e)
+		if e.guarding != null:
+			e.guarding.guards = maxi(0, e.guarding.guards - 1)
 		path_enemies[e.path].erase(e)
 		var gold: int = Economy.kill_reward(e.def, mods)
 		pending_gold += gold
@@ -1476,6 +1511,8 @@ func _apply_damage(e: Enemy, dmg: float) -> void:
 		enemy_killed.emit(e, gold)
 		if e.def.split_into != null and e.def.split_count > 0:
 			_split(e)
+	elif e.def.is_boss:
+		_check_phases(e)  # only bosses have phases (content_test checks it)
 
 
 ## A Splitter bursts: its brood appears where it fell (just behind, spread sideways), scaled by
@@ -1495,6 +1532,54 @@ func _split(parent: Enemy) -> void:
 		child.max_hp = kind.hp * _wave.hp_scale
 		child.hp = child.max_hp
 		child.speed = kind.speed * _wave.speed_scale
+		_arrive(child)
+		_place_enemy(child)
+		_insert_sorted(path_enemies[child.path], child)
+		enemy_spawned.emit(child)
+
+
+## Fire every phase of boss `e` whose threshold its hp has reached, in order, once each.
+func _check_phases(e: Enemy) -> void:
+	var phases: Array[BossPhase] = e.def.phases
+	while e.alive and e.next_phase < phases.size() \
+			and e.hp <= phases[e.next_phase].at_hp_fraction * e.max_hp + 1e-4:
+		var index: int = e.next_phase
+		e.next_phase += 1
+		_fire_phase(e, phases[index])
+		boss_phase.emit(e, index)
+
+
+## A phase plays out: the boss's armour and speed change, it may stop, and the phase's spawns
+## appear just ahead of it (staggered along the path, spread sideways), scaled by the wave.
+## Inserted in sorted position: this can run mid-tick, from a hit.
+func _fire_phase(boss: Enemy, ph: BossPhase) -> void:
+	boss.armor_bonus += ph.armor_delta
+	boss.speed *= ph.speed_mult
+	boss.pause = maxf(boss.pause, ph.pause_seconds)
+	if ph.spawn == null or ph.spawn_count <= 0:
+		return
+	var kind: EnemyDef = ph.spawn
+	var geo: PathGeo = geos[boss.path]
+	var spread: float = RunConfig.jitter_for(config.map.paths[boss.path].spread, kind.radius)
+	for k: int in ph.spawn_count:
+		var child := Enemy.new()
+		child.id = _take_id()
+		child.def = kind
+		child.path = boss.path
+		# Clear of its body (the sprite is drawn bigger than the radius), staggered in rows.
+		child.d = minf(boss.d + boss.def.radius * 1.3 + kind.radius + 8.0 * (k % 3),
+				maxf(0.0, geo.length - 1.0))
+		var side: float = 0.0 if ph.spawn_count == 1 \
+				else float(k) / float(ph.spawn_count - 1) * 2.0 - 1.0
+		child.offset = side * spread
+		child.max_hp = kind.hp * _wave.hp_scale
+		child.hp = child.max_hp
+		child.speed = kind.speed * _wave.speed_scale
+		if ph.keep_pace:
+			child.speed = minf(child.speed, boss.speed)
+		if ph.guard:
+			child.guarding = boss
+			boss.guards += 1
 		_arrive(child)
 		_place_enemy(child)
 		_insert_sorted(path_enemies[child.path], child)

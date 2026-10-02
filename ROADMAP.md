@@ -3,8 +3,8 @@
 Work is grouped into **bundles**. Each bundle is sized to be taken from start to verified finish
 in **one session by a strong model** (e.g. Fable 5.1), without the user in the loop mid-way.
 
-_Last updated: 2026-09-29. Concept: "Hold the Gate" (see `README.md`). Current work: **E8,
-the content expansion** (Stages 1–2 done; next Stage 3, bosses as data), then B5._
+_Last updated: 2026-10-01. Concept: "Hold the Gate" (see `README.md`). Current work: **D1, the
+decision gate** (B5, the Android build, and E9, the tall-screen layout, closed 2026-10-01)._
 
 > **Platform focus, 2026-09-29 (user): Google Play first, not Steam.**
 > - The path after E8: **B5** (Android build and performance) → **D1** → the mobile track
@@ -38,9 +38,10 @@ the content expansion** (Stages 1–2 done; next Stage 3, bosses as data), then 
 > | E6 | Visual style (fonts, palette, type scale as data; the user picked the hybrid direction) + contextual tips that stop time and teach each new thing (pulls parts of B6 and B8 forward) | ✅ 2026-09-27 (`docs/2026-09-27-style-and-tutorials/`) · 👤 play a fresh campaign |
 > | E5c | The active ability (an artillery strike) and unit synergies (+ their tips) | ✅ 2026-09-27 (`docs/2026-09-27-artillery-and-synergies/`) · 👤 feel the strike, judge the links |
 > | E7 | Art readability and resolution: 4× sprites, readable enemies, damage-type colours, bigger crates and barricade, biome grounds | ✅ 2026-09-27 (`docs/2026-09-27-art-readability/`) · 👤 play it |
-> | E8 | Content expansion to ship 6 sectors, in 4 stages: (1) special attacks as data, picked at map start with clip tutorials; (2) Wasp, Warden, Burrower, Bombardier; (3) bosses as data (a 50-damage Queen, Broodmother, Siege Titan, Overmind); (4) Mire Crossing, Ashfall, The Hive + an 18-star tree | Stage 1 ✅ 2026-09-27 (napalm on the road 2026-09-28) · Stage 2 ✅ 2026-09-28 (`docs/2026-09-27-content-expansion/`) · 👤 judge the attacks and the four enemies · Stages 3–4 — |
+> | E8 | Content expansion to ship 6 sectors, in 4 stages: (1) special attacks as data, picked at map start with clip tutorials; (2) Wasp, Warden, Burrower, Bombardier; (3) bosses as data (a 50-damage Queen, Broodmother, Siege Titan, Overmind); (4) Mire Crossing, Ashfall, The Hive + an 18-star tree | Stage 1 ✅ 2026-09-27 (napalm on the road 2026-09-28) · Stage 2 ✅ 2026-09-28 · Stage 3 ✅ 2026-09-29 · Stage 4 ✅ 2026-09-30 (`docs/2026-09-27-content-expansion/`) · ✅ reviewed by the user 2026-09-30 |
 > | — | Open from E3: make Skitters and Spitters demand their counters (the bot gets by with Snipers and Mortars) | 👤 tune by hand |
-> | — | Open from E4/E5a: the sim tick is up to 1.7–1.95 ms in game under stress (it was about 0.65 at E2); measure on the phone (B5) before more per-enemy rules | B5 |
+> | — | Open from E4/E5a: the sim tick is up to 1.7–1.95 ms in game under stress (it was about 0.65 at E2); measure on the phone (B5) before more per-enemy rules | Measured in B5: 4–7 ms on the S24 at 260 enemies, 2–3 ms at Canyon wave 10. Real waves fit the budget; the synthetic stress load wouldn't hold 60 fps on an A15-class phone. Optimise before more per-enemy rules |
+> | E9 | **Tall-screen layout** (user, 2026-10-01): design for 540×1170 (19.5:9) instead of 540×960; every map moved down 120 units with a longer approach from the top (+14%, distances unchanged); the special attack, Start Wave and Repair in a bottom thumb strip; 16:9 screens get extra width (`expand`); grounds regenerated; HP re-tuned per sector against the bot | ✅ 2026-10-01 (`docs/2026-10-01-e9-tall-screen-layout/`) · 👤 play on the phone |
 
 > **Pivot, 2026-09-25 (user request).** Work item `docs/2026-09-25-build-spots-loot-and-art/`,
 > done outside the bundle order:
@@ -111,8 +112,8 @@ should attempt.
 | B3 | Run loop: meta, save (build/cards done in the pivot) | Prototype | M | pivot | ✅ 2026-09-27 in E5b |
 | B4 | Balance bot, tuning & juice | Prototype | L | B3 | ✅ 2026-09-27 · 👤 play; judge Switchback + the Queen |
 | E7 | Art readability & resolution | Prototype | L | B4 | ✅ 2026-09-27 · 👤 play it |
-| E8 | Content expansion: 6 sectors, 4 enemies, bosses, special attacks (4 stages) | Prototype | XL | E7 | Stages 1–2 ✅ 2026-09-28 · Stages 3–4 — |
-| B5 | Android build & performance | Prototype | M | B4 | — |
+| E8 | Content expansion: 6 sectors, 4 enemies, bosses, special attacks (4 stages) | Prototype | XL | E7 | ✅ 2026-09-30 |
+| B5 | Android build & performance | Prototype | M | B4 | ✅ 2026-10-01 (`docs/2026-10-01-b5-android-build/`) · 👤 play on the phone |
 | **D1** | **Decision: continue, pivot or stop** | Gate | — | B5 | — |
 | B6 | Art direction options | Vertical slice | L | D1 | — |
 | B7 | Content pipeline & Python tools | Vertical slice | L | D1 | — |

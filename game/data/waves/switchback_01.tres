@@ -30,5 +30,5 @@ path = -1
 script = ExtResource("w")
 spawns = Array[ExtResource("se")]([SubResource("s0")])
 crates = Array[ExtResource("cs")]([SubResource("c0"), SubResource("c1")])
-hp_scale = 1.371
+hp_scale = 1.467
 speed_scale = 1.0

@@ -12,9 +12,22 @@ store.
 
 ## Status
 
-> **Current as of 2026-09-28: prototype in progress, and playable with real art.** Content
-> expansion Stages 1–2 are done (special attacks; four new enemies built but not yet in any
-> sector's waves, see `--showcase`); Stages 3–4 (bosses, sectors 4–6) are next.
+> **Current as of 2026-10-01: prototype in progress, and playable on Android.** B5 built a
+> debug APK (37 MB, arm64) that runs on a Galaxy S24 at a steady 60 fps with the
+> Compatibility renderer, using about 310 MB of memory
+> ([`docs/2026-10-01-b5-android-build/`](./docs/2026-10-01-b5-android-build/)).
+> **E9 (same day): the tall-screen layout.** The game is now designed for 540×1170 (19.5:9):
+> - every map is 120 units taller (a longer approach), with HP re-tuned per sector;
+> - Start Wave, Repair and the special attack sit in a bottom thumb strip;
+> - 16:9 screens get extra width
+> ([`docs/2026-10-01-e9-tall-screen-layout/`](./docs/2026-10-01-e9-tall-screen-layout/)).
+>
+> Next: D1 (continue, pivot or stop), after the user plays on the phone.
+>
+> **2026-09-30:** the content
+> expansion (E8) is built: special attacks, four new enemies, bosses as data, and **six
+> sectors** (Mire Crossing, Ashfall and The Hive join the first three, each with its own boss),
+> an 18-star campaign and a sixth skill-tree tier. The user reviewed it on 2026-09-30.
 >
 > - **The concept:** "Hold the Gate" (working title). A fixed outpost holds its gate against an
 >   alien swarm coming down paths that bend, merge, and break open mid-run.
@@ -82,9 +95,9 @@ store.
 >     and the balance bot, tuning and juice pass (B4,
 >     [`docs/2026-09-27-b4-balance-and-juice/`](./docs/2026-09-27-b4-balance-and-juice/)).
 >   - **Now:** the content expansion to 6 sectors
->     ([`docs/2026-09-27-content-expansion/`](./docs/2026-09-27-content-expansion/)). Stage 1,
->     the special attacks, is done; next come 4 new enemies, bosses, and 3 new sectors.
->   - **Then:** the Android build (B5). The user tests on the phone once the experience is complete.
+>     ([`docs/2026-09-27-content-expansion/`](./docs/2026-09-27-content-expansion/)). All four
+>     stages are built (special attacks, 4 new enemies, bosses, sectors 4–6).
+>   - **Then:** the Android build (B5, done 2026-10-01), then the tall-screen layout.
 >
 >   See
 >   [`docs/2026-09-26-escalating-difficulty/`](./docs/2026-09-26-escalating-difficulty/).
@@ -114,9 +127,9 @@ implementation log). See [`CLAUDE.md`](./CLAUDE.md) §3.
 | `docs/detailed-project-overview.md` | Canonical index of every file and system, with rationale and dependencies. |
 | `docs/YYYY-MM-DD-*/` | One folder per work item: `research.md` → `plan.md` → `implementation.md`. |
 | `.claude/` | Claude Code skills, agents and (untracked) local permissions. |
-| `game/` | Godot 4.7.2 project: `src/`, `data/`, `scenes/`, `tests/`, `clips/` (generated tutorial clips, `.ogv`), vendored `addons/gdUnit4/`. |
-| `scripts/` | `test.sh` (headless game tests), `capture_clip.sh` (record a clip). |
-| `.tools/` | Repo-local Godot binary (git-ignored; see Quick start). |
+| `game/` | Godot 4.7.2 project (designed for 540×1170 portrait): `src/`, `data/`, `scenes/`, `tests/`, `clips/` (generated tutorial clips, `.ogv`), vendored `addons/gdUnit4/`. |
+| `scripts/` | `test.sh` (headless game tests), `capture_clip.sh` (record a clip), `android_env.sh` (sourced: the repo-local Android toolchain), `build_android.sh` (debug APK, install), `android_perf.sh` (a measured run on the phone). |
+| `.tools/` | Repo-local toolchain (git-ignored; see Quick start): the Godot binary; for Android, `godot-export/` (self-contained, with the templates), `jdk/`, `android-sdk/`, `keystores/debug.keystore`, `android-home/` (adb and SDK state, kept out of `$HOME`). |
 | `tools/` | Python (`uv`) tooling, `gf-tools`: the procedural art generator (`uv run gen-art`; it paints each map's ground from `game/data/maps`), the balance report (`uv run balance`) and the tutorial clips (`uv run make-clips`). Content and store tools come later. |
 | `prototypes/` | _planned — throwaway experiments; never imported by the game._ |
 
@@ -139,6 +152,24 @@ scripts/test.sh                                                          # all g
 scripts/capture_clip.sh midgame 20 --seed=5 --autoplay --skip-to-wave=5  # record captures/midgame.mp4
 scripts/capture_clip.sh tips 60 --seed=3 --autoplay --tips             # the bot reads the first-run tips
 .tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path game --editor       # open the editor (WSLg)
+```
+
+**Android** (the setup steps are in `docs/2026-10-01-b5-android-build/plan.md` § Setup).
+Pair the phone once over Wireless debugging:
+
+```bash
+source scripts/android_env.sh
+adb pair IP:PAIR_PORT CODE
+adb connect IP:PORT
+echo IP:PORT > .tools/android-home/last_device
+```
+
+Then:
+
+```bash
+scripts/build_android.sh --install --launch                              # build, install, start
+scripts/android_perf.sh stress 40 --autoplay --stress --perf             # a measured run → captures/perf/
+CLIP=1 scripts/android_perf.sh w10 40 --map=canyon --tree=all --autoplay --skip-to-wave=10 --perf
 ```
 
 Under WSL, Godot falls back from Vulkan to OpenGL 3 (via D3D12), and audio uses the dummy driver.

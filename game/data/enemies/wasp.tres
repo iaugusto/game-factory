@@ -16,5 +16,5 @@ color = Color(1, 0.7686, 0.1569, 1)
 weak_to = 1
 resists = 4
 armor = 0.0
-threat = 1.5
+threat = 3.0
 flying = true

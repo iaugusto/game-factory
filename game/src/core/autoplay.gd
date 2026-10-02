@@ -39,7 +39,7 @@ var repair_below: float = 0.6
 ## During a wave, try to spend every this many ticks.
 var build_every_ticks: int = 30
 ## Plots are filled nearest this point first (the middle of the field).
-var plot_focus: Vector2 = Vector2(270, 560)
+var plot_focus: Vector2 = Vector2(270, 680)
 
 
 ## The crate nearest the gate (least distance left on its path; the most urgent loot), or null.
@@ -85,9 +85,10 @@ func play_build(run: Run) -> void:
 
 
 ## The unit to build next, or build_order when counter_pick is off. Counter-picking reads the
-## coming two waves like a player reading the preview: the biggest gap is the enemy type with
-## the most need (count × gate damage) for the least coverage (kills per second by the units
-## built), and it takes the unit that kills that type fastest per √cost. It saves for that
+## coming two waves like a player reading the preview (bosses' phase spawns included): the
+## biggest gap is the enemy type with the most need (count × gate damage × toughness) for the
+## least coverage (kills per second by the units built), and it takes the unit that kills that
+## type fastest per √cost. It saves for that
 ## unit unless enemies are already at the gate; then it takes the best one it can afford now.
 func _choose_unit(run: Run, built: int) -> StringName:
 	if not counter_pick:
@@ -100,6 +101,11 @@ func _choose_unit(run: Run, built: int) -> StringName:
 		var w: WaveDef = run.config.waves[mini(run.wave_index + k, run.wave_count() - 1)]
 		hp_scale = maxf(hp_scale, w.hp_scale)
 		var c: Dictionary = WaveSchedule.enemy_counts(w)
+		# What a boss's phases will spawn counts too (a Broodmother means Skitters).
+		for e: EnemyDef in c.keys():
+			for ph: BossPhase in e.phases:
+				if ph.spawn != null:
+					c[ph.spawn] = int(c.get(ph.spawn, 0)) + ph.spawn_count * int(c[e])
 		for e: EnemyDef in c:
 			counts[e] = maxi(int(counts.get(e, 0)), int(c[e]))
 	var gap: EnemyDef = null
@@ -111,8 +117,12 @@ func _choose_unit(run: Run, built: int) -> StringName:
 			if not plot.is_empty():
 				cover += _kill_rate(run, plot.def, e, plot.level, hp_scale)
 		# Need = what the type can do to the gate (count × damage per strike), not `threat`
-		# (an abstract rating that undervalues swarms of small hitters).
-		var need: float = counts[e] * e.wall_damage
+		# (an abstract rating that undervalues swarms of small hitters), × √(its HP / 10): a
+		# tough one lives to strike many times (E8 Stage 4: without it the bot met Carapaces
+		# with a wall of MG nests and sectors 4-6 fell to 0-22%; the cost is Canyon, whose
+		# Skitter floods it now covers less: smart 35% -> 18% on the same content).
+		var tough: float = sqrt(maxf(1.0, (e.hp + e.shield_amount) * hp_scale / 10.0))
+		var need: float = counts[e] * e.wall_damage * tough
 		var score: float = need / (1.0 + 4.0 * cover)
 		if score > gap_score:
 			gap_score = score
@@ -321,7 +331,7 @@ func ability_target(run: Run) -> Variant:
 			if not plot.is_empty() and plot.hp < plot.max_hp * repair_below * 0.5:
 				hurt = true
 		return Vector2(run.config.playfield_width() / 2.0, run.config.wall_y) if hurt else null
-	var min_y: float = run.config.wall_y * 0.55 if a.kind == AbilityDef.Kind.FREEZE else -INF
+	var min_y: float = run.config.wall_y - 387.0 if a.kind == AbilityDef.Kind.FREEZE else -INF
 	var reach: float = a.length / 2.0 if a.kind == AbilityDef.Kind.BURN else a.radius
 	var hit: Array = best_cluster(run, reach, min_y)
 	if hit.is_empty():

@@ -17,7 +17,7 @@ static var look: StyleDef
 
 static func _static_init() -> void:
 	var id: StringName = DEFAULT_STYLE
-	for a: String in OS.get_cmdline_user_args():
+	for a: String in LaunchArgs.get_args():
 		if a.begins_with("--style="):
 			id = StringName(a.get_slice("=", 1))
 	use(id)

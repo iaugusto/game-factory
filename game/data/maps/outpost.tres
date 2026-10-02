@@ -16,19 +16,19 @@
 
 [sub_resource type="Resource" id="path_0"]
 script = ExtResource("path_s")
-points = PackedVector2Array(90, 0, 90, 860)
+points = PackedVector2Array(90, -10, 90, 120, 90, 980)
 spread = 30.0
 opens_at_wave = 1
 
 [sub_resource type="Resource" id="path_1"]
 script = ExtResource("path_s")
-points = PackedVector2Array(270, 0, 270, 860)
+points = PackedVector2Array(270, -10, 270, 120, 270, 980)
 spread = 30.0
 opens_at_wave = 1
 
 [sub_resource type="Resource" id="path_2"]
 script = ExtResource("path_s")
-points = PackedVector2Array(450, 0, 450, 860)
+points = PackedVector2Array(450, -10, 450, 120, 450, 980)
 spread = 30.0
 opens_at_wave = 1
 
@@ -38,6 +38,6 @@ id = &"outpost"
 biome = &"desert"
 display_name = "Frontier Outpost"
 paths = Array[ExtResource("path_s")]([SubResource("path_0"), SubResource("path_1"), SubResource("path_2")])
-plots = PackedVector2Array(180, 250, 360, 250, 180, 500, 360, 500, 180, 725, 360, 725, 22, 615, 518, 615, 90, 876, 270, 876, 450, 876)
-barricade_slots = PackedVector2Array(90, 770, 270, 770, 450, 770)
+plots = PackedVector2Array(180, 370, 360, 370, 180, 620, 360, 620, 180, 845, 360, 845, 22, 735, 518, 735, 90, 996, 270, 996, 450, 996)
+barricade_slots = PackedVector2Array(90, 890, 270, 890, 450, 890)
 waves = Array[ExtResource("t_w")]([ExtResource("w1"), ExtResource("w2"), ExtResource("w3"), ExtResource("w4"), ExtResource("w5"), ExtResource("w6"), ExtResource("w7"), ExtResource("w8"), ExtResource("w9"), ExtResource("w10")])

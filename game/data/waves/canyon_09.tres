@@ -123,5 +123,5 @@ elite = ExtResource("el_armoured")
 script = ExtResource("w")
 spawns = Array[ExtResource("se")]([SubResource("s0"), SubResource("s1"), SubResource("s2"), SubResource("s3"), SubResource("s4"), SubResource("s5"), SubResource("x0"), SubResource("x1"), SubResource("x2"), SubResource("x3")])
 crates = Array[ExtResource("cs")]([SubResource("c0"), SubResource("c1"), SubResource("c2"), SubResource("c3")])
-hp_scale = 8.1
+hp_scale = 9.072
 speed_scale = 1.24

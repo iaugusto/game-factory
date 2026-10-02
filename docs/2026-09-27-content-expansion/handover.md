@@ -1,39 +1,78 @@
-# Handover: content expansion (rewritten 2026-09-29, end of session)
+# Handover: next session (rewritten 2026-09-30, end of day)
 
-Read this first when resuming. Then read `plan.md` (§ Stage 3 and Stage 4), `research.md`
-(§3.3 has the bosses, §6 has the user's answers) and the end of `implementation.md`.
+**E8 (the content expansion) is done and reviewed.** The user said "looks good" to the
+Stage 4 report. This file is the entry point for the next session; its §2–§5 keep the E8
+record.
 
-**Next action: Stage 3, bosses as data.** The user reviewed the build so far ("the game feels
-good") and agreed to the plan: Stage 3, then Stage 4, then B5 on Android.
+## 0. Start here tomorrow
 
----
+1. **Check git.** Stages 3–4 were uncommitted at handover (92 paths).
+   - If `git status` is still dirty, suggest the user commit first (they run it; see memory
+     `github-push-setup`):
+     `! git checkout -b e8-stages-3-4 && git add -A && git commit -m "feat: bosses and sectors 4-6 (E8 Stages 3-4)"`
+   - Branch off `main` for new work.
+2. **Next work item: B5, the Android build and performance** (`ROADMAP.md` § B5; the platform
+   is Google Play first, per memory `platform-focus`). Create
+   `docs/2026-09-30-b5-android-build/` (or the day's date), then `research.md` → `plan.md` →
+   `implementation.md`.
+3. **Ask before starting B5.** These are CLAUDE.md §5 approvals, marked 🔒 in the ROADMAP:
+   - Godot 4.7.2 **export templates** (about 1.28 GB, into `.tools/`);
+   - **JDK 17** and the **Android command-line SDK** (where they install: `.tools/`, not
+     system-wide, if possible);
+   - **the user's phone model** (the low-end budget profile) and how the APK gets there:
+     USB/adb, or a sideload;
+   - a **debug keystore** only; release signing and the package name are sensitive, so ask
+     separately.
+4. **B5's scope** (ROADMAP):
+   - `scripts/build_android.sh` and a debug APK;
+   - an on-device frame-time and memory capture at wave 10 and under `--stress --perf`;
+   - a 30 s clip and playtest notes;
+   - budgets recorded, met or not.
+   - Bring in the numbers from §5 below, and add physics interpolation if the phone runs
+     above 60 Hz.
+5. **Things to keep in mind:**
+   - Touch input is already mouse-emulation safe (`run_scene_test`).
+   - The UI is 540×960 portrait.
+   - `--perf` prints the frame and sim-tick stats.
 
 ## 1. Repository state
 
-- **Branch `main`**, one commit (`bc6c453 first commit`). **Everything since is uncommitted**
-  (about 300 paths): E6, E5c, B4, art readability, and this work item's Stages 1–2 plus the
-  fixes.
-- **The user commits and pushes; never do it yourself** (CLAUDE.md §5; `git commit`/`push`
-  are blocked here). At handover it was suggested that they branch and commit before Stage 3.
-- **Tests at handover:** game 271/271 (`scripts/test.sh`), tools 12/12. All green.
+- **Branch `main`.** Stages 1–2 are committed (`dd52626`, `dd2951a`); **Stages 3 and 4 are
+  uncommitted.**
+- **The user commits and pushes; never do it yourself** (CLAUDE.md §5).
+- **Tests at handover:** game 288/288, tools 12/12.
+- `run_scene_test` prints "12 resources still in use at exit". This predates Stage 3 and is
+  harmless.
 
-## 2. What's done in this work item
+## 2. What's done
 
 | Step | Date | Where to read |
 | --- | --- | --- |
-| Stage 1: special attacks as data (Strike, Cryo Bomb, Napalm Line, Minefield, Repair Drones), the pick at map start, clip tutorials, save v7 | 2026-09-27 | `implementation.md`, `balance-stage1*.md` |
-| The napalm fix: BURN burns a stretch of road, down every path through the tapped spot (user review) | 2026-09-28 | `implementation.md` |
-| Stage 2: Wasp (flying), Warden (shield aura), Burrower (dives), Bombardier (siege from range) | 2026-09-28 | `implementation.md` |
-| Tip card overflow ("black screen" after a card) | 2026-09-29 | `docs/2026-09-29-tip-card-overflow/` |
+| Stage 1: special attacks as data, the pick, clip tutorials, save v7 | 2026-09-27 | `implementation.md`, `balance-stage1*.md` |
+| Napalm along the road; Stage 2: Wasp, Warden, Burrower, Bombardier | 2026-09-28 | `implementation.md` |
+| Stage 3: `BossPhase`, a Queen who deals 50, Broodmother, Titan, Overmind, `BossBar` | 2026-09-29 | `implementation.md`, `balance-stage3.md` |
+| Stage 4: Mire Crossing, Ashfall, The Hive; 30 waves; 18 stars; tree tier 6; bot fixes | 2026-09-30 | `implementation.md`, `balance-stage4.md`, `gen_maps.py`, `gen_waves.py` |
 
-**Stage 2 enemies are not in any wave yet.** Stage 4 puts them in the sector 4–6 waves and
-tunes their numbers. Until then `--showcase=wasp,warden,burrower,bombardier` plays them.
-
-**Stage 2 defaults the user hasn't judged yet** (ask only if they come up):
-- a slowed Burrower can't dive;
-- the Warden's shield soaks damage after the chart and armour;
-- the Bombardier reuses `wall_damage`/`attack_interval` for its globs;
-- the Bombardier's lime sac may read too close to the Spitter's gland.
+**Defaults that stand** (the user reviewed E8 and said "looks good"; revisit only if they raise one):
+- **Stage 3:**
+  - the Queen strikes every 3 s;
+  - the Titan sheds all its armour at 50%;
+  - `guard` is per phase;
+  - escorts spawn ahead of the boss.
+- **Stage 4:**
+  - the Overmind finale is long (guarded for much of its walk);
+  - the threat re-rating and the relaxed escalation test (per-sector totals and boss wave,
+    not wave by wave);
+  - mid-field breach portals are allowed;
+  - tier-6 nodes Heavy Ordnance, Bastion and Fire Control;
+  - sectors 4–6 unlock no new special attack (Overcharge is still the spare).
+- **Balance:**
+  - Canyon's *bot* score fell 35% → 18% on unchanged content, a side effect of the bot's
+    toughness weighting, which sectors 4–6 need; I did not retune Canyon;
+  - "fixed builds below smart" still fails (heavy-only is strong on Switchback and Hive);
+  - casual runs sit at the top of the band.
+- **Stage 2:** a slowed Burrower can't dive; the Warden's shield soaks after armour; the
+  Bombardier's lime sac vs the Spitter's gland.
 
 ## 3. Decisions (the user's own; don't reopen)
 
@@ -54,53 +93,25 @@ tunes their numbers. Until then `--showcase=wasp,warden,burrower,bombardier` pla
   - maps are built from paths;
   - there's a right weapon per enemy (the damage chart).
 
-## 4. Stage 3: where to start
+## 4. Regenerating sector content
 
-**Plan (`plan.md`):**
-- `defs/boss_phase.gd` (`BossPhase`): `at_hp_fraction`, `spawn` (`EnemyDef` × count),
-  `armor_delta`, `speed_mult`, `shield_while_alive` (an `EnemyDef` id), `pause_seconds`.
-- `EnemyDef.phases: Array[BossPhase]`.
-- **Hive Queen:** wall_damage 50, and a phase at 50% (a Skitter swarm).
-- **Broodmother:** births swarms at 66% and 33%; weak to explosive.
-- **Siege Titan:** sheds armour and speeds up at 50%, spawns Wardens; weak to cryo.
-- **The Overmind:** shielded while any Warden lives; phase 2 calls Wasps; phase 3 heals from
-  Menders; weak to piercing.
-- A boss HP bar at the top of the HUD with phase ticks.
-- **Tests:** phases fire once each, in order, at their thresholds; shield-while-alive holds
-  until the escort dies.
+`gen_maps.py` and `gen_waves.py` (this folder) wrote the Stage 4 maps and waves. The `.tres`
+files are the source of truth. To redo them, run the scripts with the final knobs:
 
-**Where the boss lives today:**
-- `data/enemies/boss.tres` (id `boss`, "Hive Queen"): 250 hp, speed 11, wall_damage 999,
-  armour 4, weak to piercing, resists cryo, radius 40.
-- It closes wave 10 of every current map (`data/waves/wave_10.tres`, `canyon_10.tres`,
-  `switchback_10.tres`).
-- Art: `queen()` in `tools/src/gf_tools/art/enemies.py` (box 128).
-- `content_test` references `&"boss"` (has_boss).
+```
+python3 gen_maps.py --write
+python3 gen_waves.py --write mire.count=0.66 mire.addk=0.75 mire.hp=1.06 ashfall.count=0.52 ashfall.addk=0.5 ashfall.hp=0.95 hive.count=0.6 hive.addk=0.6 hive.hp=1.04
+```
 
-**Hooks to reuse:**
-- `CombatSim._apply_damage`: the hp threshold check goes here. Mind that `_apply_damage` can
-  run during `_resolve_queued`, never inside the move pass.
-- Spawning mid-wave: follow `_split` (`_insert_sorted`, `_arrive(e)`, `enemy_spawned`).
-- Stage 2 pieces a phase can use directly:
-  - Wardens and `_wardens` for "shielded while any Warden lives";
-  - `Enemy.shield`;
-  - `Enemy.stun` for a pause.
-- A boss HP bar belongs to `ui/hud.gd`. A tip per boss uses the `new_enemy` intel card (the
-  description).
+Then run `cd tools && uv run gen-art`, a Godot `--import`, the tests, and
+`uv run balance --maps mire,ashfall,hive --strategies smart,casual --seeds 30` (about 3 min).
 
-**Performance:** phase checks happen on damage, which is cheap. Keep `--stress=mix` and the
-headless per-pass probe (§6) for A/B comparisons.
+## 5. For B5 (Android), from this work item
 
-## 5. Stage 4, in brief
-
-- **Maps:** Mire Crossing (swamp: mud, 4 narrow paths merging in pairs; Wasp, Warden),
-  Ashfall (ash: a mid-field burrow; Burrower, Bombardier) and The Hive (infested; the
-  finale).
-- **Waves and progression:** 30 waves, 6 sector cards, and an 18-star tree with 6 new nodes
-  (some for abilities).
-- **Balance:** bot tree profiles T9/T12/T15, balanced across 6 sectors.
-- **Also:** the Repair ability's balance, and the open B4 items (heavy dominates Switchback;
-  Skitter and Spitter counters; the ability button's position).
+- **Draw calls under stress:** Outpost 82, Canyon 109, Switchback 104, the new maps
+  109–120.
+- **Desktop sim tick:** about 1.3–2.4 ms.
+- Measure both on the target phone.
 
 ## 6. Commands and tooling (all verified)
 

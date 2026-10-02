@@ -348,3 +348,256 @@ implementation; the user judges them from clips and play.
   - whether each rule reads at a glance (a Wasp's lift, the bubbles, the mounds, the globs);
   - whether the Bombardier's lime sac is too close to the Spitter's gland;
   - whether "can't dive while slowed" is a fair counter.
+
+## 2026-09-29 22:20 — Stage 3 begins: bosses as data
+
+Resumed from `handover.md` (the user committed Stages 1–2 as `dd52626`/`dd2951a`). Two
+refinements to the plan's `BossPhase`, both so a phase describes its own escort rather than
+the whole field:
+- **`guard` instead of `shield_while_alive` (an enemy id).** An id-based rule would let any
+  Warden anywhere on the map shield the boss. Instead, a phase marks its own spawns as guards:
+  the boss takes no damage while any guard it spawned lives (a count on the boss, decremented
+  when a guard dies: O(1) per hit).
+- **`keep_pace`.** Escorts walk at the boss's speed, so Wardens stay beside the Titan (their
+  aura covers it) instead of sprinting to the gate.
+- **`callout`**, a line the view pops over the boss when the phase fires ("THE BROOD HATCHES").
+- **`at_hp_fraction` 1.0** fires on arrival (the Overmind's opening escort).
+- **`pause_seconds`** is its own `Enemy.pause`, not `stun`, which the view draws as ice.
+
+## 2026-09-29 22:35 — Stage 3: rules, content, art
+
+- **Core.**
+  - `defs/boss_phase.gd` (`BossPhase`).
+  - `EnemyDef` Boss group: `is_boss`, `phases`.
+  - `CombatSim`:
+    - `bosses` (kept by spawn and kill) and the `boss_phase(boss, index)` signal.
+    - `_check_phases`: on arrival, and after a non-lethal hit on a boss. It fires every phase
+      whose threshold the hp has reached, in order. It is monotonic, so healing never re-fires
+      a phase.
+    - `_fire_phase`: armour (`Enemy.armor_bonus`, read through `extra_armor()` alongside an
+      elite's), speed, `Enemy.pause`, and spawns. Spawns are inserted sorted just ahead of the
+      boss, clear of its body, staggered in rows of 3 and fanned across the path's spread. They
+      scale by the wave like a Splitter's brood.
+    - Guards: `Enemy.guarding` points at the boss, `guards` counts them, and `_apply_damage`
+      returns early while it is above 0.
+- **Content.**
+  - Hive Queen: 999 → 50 per strike (the user's call), `attack_interval` 1 → 3 s (my
+    proposal: it gives the defence time to kill her at the gate between the two strikes), 6
+    Skitters at 50% with a 1.2 s pause.
+  - `broodmother.tres`, `titan.tres`, `overmind.tres` (numbers in the overview roster; Stage 4
+    tunes them against real sector waves).
+  - All descriptions ≤ 80 characters (the intel card cap).
+  - **Titan armour:** Frost hits for 3.5, so against armour 8 even the cryo weakness gave
+    ≈1 damage. The Titan starts at armour 6 and sheds all 6 at 50%. Heavy hitters crack the
+    plates, and then Frost both melts it (×2) and slows the charge.
+- **Art.** `enemies.py` `broodmother` (copper nest, pods with green Skitter embryos), `titan`
+  (slate plates, ember seams, a ram), `overmind` (an indigo brain, cyan folds, swinging
+  tendrils), with palette entries. Checked as a PNG sheet next to the Queen; the Titan's seams
+  were widened after the first look.
+- **Tests.**
+  - `boss_test` (12): order and thresholds, one hit crossing two, no phase on a killing
+    blow, no re-fire after a heal, the brood ahead and sorted, arrival phases, armour shed and
+    speed, pause, guards voiding hits until the last dies, units killing guards first,
+    keep-pace, the `bosses` list.
+  - `content_test`: bosses found by `is_boss`, 15 enemies, and `test_every_boss_is_well_formed`
+    (it also pins the Queen at half the base gate).
+
+## 2026-09-29 22:55 — Stage 3: view, clips
+
+- **`ui/boss_bar.gd` (`BossBar`).** It sits under the HUD, centred and kept clear of the
+  ability button: the name, HP with a white drain, a tick per phase (dimmed once passed), gold
+  while guarded, and "GUARDED ×N". The first clip showed a long status line running into the
+  name, so it became a short right-aligned tag.
+- **`RunController`.** A banner names a boss as it arrives; each phase pops its `callout` over
+  the boss with a ring and a shake. `--showcase` spawns one of a boss, not 8.
+- **`EnemyField`.** A guarded boss wears a gold, pulsing bubble; dashed gold tethers run from
+  each guard to it.
+- **Escort placement.** The first Overmind clip had the Wardens stacked on its head. Spawns
+  now start `radius × 1.3 + their radius` ahead.
+- **Scene test:** the Overmind's bar, the "GUARDED ×3" tag, the bubble, the bar clear of the
+  ability button, the guards killed, a phase tick and the 10 Wasps, and the bar hidden once
+  she dies.
+- **Clips** (`captures/`, all bot-defended `--showcase`, 60 s):
+  - `stage3_overmind.mp4`: the guard bubble, tethers, then Wasps and Menders.
+  - `stage3_titan.mp4`: the Warden escort, whose bubbles cover it.
+  - `stage3_broodmother.mp4`: two hatchings.
+  - `stage3_queen.mp4`: the Queen's Skitters.
+- **A pre-existing warning.** `run_scene_test` prints "12 resources still in use at exit". It
+  does so with the new test excluded too, so it predates Stage 3. Not chased here.
+
+## 2026-09-29 23:15 — Stage 3: budgets, balance — Stage 3 complete
+
+- **Perf** (`--stress --perf`, xvfb, OpenGL 3):
+  - **Plain:** sim tick 1.04 ms at 183 enemies and 1.66 ms at 260; 82–83 draw calls.
+  - **Mixed:** 1.06–2.13 ms and 88–91 draw calls. Stage 2 read 2.1–3.1 ms on a noisy day.
+  - The per-hit cost added is one int compare (guards) and one bool (`is_boss`) per
+    non-lethal hit.
+  - Bosses aren't in the stress wave; each adds one MultiMesh batch.
+- **Balance** (`balance-stage3.md`, 50 seeds, 1350 runs):
+  - **Smart wins:** Outpost 38%, Canyon 36%, Switchback 48%.
+  - **Casual wins:** 48%, 32%, 42%.
+  - Stage 1 (tuned) read 38/34/48 for smart and 46/32/42 for casual, so this is within
+    noise.
+  - The Queen has left every profile's top leaks. She was 20–160 gate damage per run in
+    some profiles, but the bot's losses come in waves 6–9, which is why wins barely moved.
+  - Targets still open are the same as before Stage 3: Outpost casual 48% (target ≤ 40%),
+    Switchback casual 42%, and heavy builds matching smart. These belong to Stage 4's
+    balance pass.
+- **Tests:** game 285/285, tools 12/12.
+- **For the user to judge:**
+  - whether the phase callouts and the gold guard bubble read at a glance;
+  - whether a 3 s Queen strike interval feels right;
+  - the three bosses' looks;
+  - whether the Titan should shed *all* its armour.
+
+## 2026-09-30 00:30 — Stage 4 begins: three sectors, 30 waves, a sixth tree tier
+
+The user said "let's keep going" after the Stage 3 report (Stage 3 still uncommitted), so
+Stage 4 is built on top of it.
+
+- **Maps** (`data/maps/mire.tres`, `ashfall.tres`, `hive.tres`), written by
+  `gen_maps.py` (kept in this folder). It checks the content test's geometry first: plots
+  ≥ spread + 12 + 22 from every centre line, a wall spot at each path end, and barricade slots
+  on a path 40–150 above the wall.
+  - **Mire Crossing** (swamp): four narrow paths (spread 20) that merge in pairs into two
+    muddy trunks. The outer pair is open from wave 1; the inner ones open at 3 and 6. Four mud
+    zones.
+  - **Ashfall** (ash): two trunks around a centre column of pads on two high-ground
+    ridges, and **burrows that break open mid-field**: on the right at wave 4, on the left at
+    wave 7.
+  - **The Hive** (infested): one portal whose path forks around a central ridge (a
+    high-ground pad) and rejoins; side breaches at waves 3 and 6; mud on both flanks.
+- **Biomes:** `terrain.py` gains `swamp`, `ash` (ember-rimmed rocks) and `infested`. That
+  one adds a new `Biome.creep` density, ×2.4.
+- **The content rule on portals.** A path may now start inside the field, but only as a
+  breach: opening after wave 1 and at least 300 above the gate. Everything else still starts
+  on an edge.
+- **Waves.** `gen_waves.py` (kept in this folder) derives each sector's waves from
+  Switchback's, which pass every content rule and pace well:
+  - the template's counts thin from wave 4 on (×`count`);
+  - Switchback paths are remapped to the new map's open paths (a breach opening this wave
+    takes the group that used Switchback's newest path);
+  - the sector's new enemies are added on a schedule (×`addk` past their two-at-a-time
+    introduction);
+  - hp_scale is ×`hp`;
+  - the Queen's slot in wave 10 becomes the sector's boss.
+- **Progression.**
+  - `RunConfig.maps` has 6 entries, for 18 stars.
+  - The campaign's cards scroll (`CampaignScreen.scroll`) and bring the newest open sector
+    into view once laid out.
+  - The skill tree gets a sixth tier, 3 stars each:
+    - Heavy Ordnance (Arsenal): special attacks +40%, via the new
+      `RunModifiers.ability_power_bonus`, which `Run.call_ability` multiplies in;
+    - Bastion (Bulwark): +60 gate HP;
+    - Fire Control (Logistics): special attacks reload 20% faster.
+  - The tree totals 36 stars against the 18 a player can earn, so it's a choice.
+  - `SkillTreePanel.NODE_SIZE` is 84 → 74 tall, so six tiers fit.
+  - Sectors 4–6 unlock no new special attack: all five are unlocked by sector 3, and the
+    spare, Overcharge, was held back in the plan.
+- **Bot profiles.** T9/T12/T15 (`BalanceRun.PROFILES`) for sectors 4–6, plus
+  `SECTOR_PROFILES` in `tools/…/balance/report.py`.
+
+## 2026-09-30 01:20 — Stage 4 tuning: what the bot runs showed
+
+1. **First pass: 0% wins in all three sectors.** I had added the new enemies on top of
+   Switchback's full waves, which the bot only just survives.
+2. **Bombardiers were overtuned (a Stage 2 number).** Two a wave sank Ashfall runs even at
+   70% HP. A Bombardier parks 200 short of the gate, and units shoot whatever is nearest
+   the gate, so it lobbed unanswered at 2.4 damage a second. Now 4 every 3.5 s (1.1/s).
+3. **The bot met Carapaces with MG nests.** Losing Ashfall runs had 7–9 MGs and one Rail.
+   `Autoplay._choose_unit` rated a type's need as count × gate damage, so twenty Skitters
+   always outranked one Carapace, though the tough one lives to strike many times. Need is
+   now × √(HP × wave scale / 10), shield included.
+   - This changes the bot everywhere, so sectors 1–3 were re-measured in the final matrix.
+4. **The bot plans for boss phase spawns.** `_choose_unit` folds `BossPhase.spawn × count`
+   into the coming waves' counts.
+5. **Ashfall's lower field had too few pads.** Only the centre column and two late-unlocking
+   flank pads covered the trunks. Now there are four flank pads: (130/410, 500) open from the
+   start, and (130, 620) and (410, 620) at waves 7 and 4.
+6. **The per-wave escalation test.** "Each sector's wave N out-threatens the sector
+   before's wave N" held for sectors 1–3 because they escalate only by HP. Sectors 4–6 thin
+   the familiar enemies to make room for new ones, and the bot's tree grows each sector, so
+   the rule no longer tracked difficulty. Two changes:
+   - **The new enemies' threat was re-rated,** from what the runs showed: Wasp 1.5 → 3,
+     Burrower 4 → 8, Bombardier 7 → 10, Warden 6 → 10. Boss threat is now proportional to base
+     HP: Broodmother 180, Titan 270, Overmind 360.
+   - **The test now asks** that each sector's total threat, and its boss wave, exceed the
+     previous sector's. Within a sector, threat still rises every wave (unchanged).
+7. **Wave 8** (whose template has a lower HP scale than wave 7) got more Stage 2 enemies in
+   each sector, to keep threat rising.
+8. **Final knobs** (`gen_waves.py`): Mire count 0.66, addk 0.75, hp 1.06; Ashfall 0.52 / 0.5 /
+   0.95; Hive 0.6 / 0.6 / 1.04.
+
+**Clips** (`captures/`):
+- `stage4_mire_w10.mp4` (T9, seed 4): the Broodmother wave and two hatchings.
+- `stage4_ashfall_w4.mp4` (T12): the right burrow breaks open.
+- `stage4_hive_w10.mp4` (T15, seed 9): the Overmind guarded ×3, then its Wardens fall.
+
+## 2026-09-30 03:10 — Stage 4: final balance, budgets, tests — E8 built
+
+- **Balance** (`balance-stage4.md`, 50 seeds, every strategy, 2700 runs). The targets are
+  smart 35–65% and casual 10–40%.
+
+  | Sector (profile) | Smart | Casual |
+  | --- | --- | --- |
+  | Outpost (T0) | 36% | 40% |
+  | Canyon (T3) | **18%** | 18% |
+  | Switchback (T6) | 44% | 36% |
+  | Mire (T9) | 36% | 26% |
+  | Ashfall (T12) | 40% | 40% |
+  | Hive (T15) | 38% | 32% |
+
+  - **Canyon is below target** on unchanged content. The cause is the bot's toughness
+    weighting; I checked it three ways:
+    - with the weighting off, Canyon is at 35% again, but sectors 4–6 fall to 0–22%;
+    - softening it (power 0.35) or weighting by armour instead both leave Canyon at an
+      identical 18% and swing Hive to 68–82%;
+    - so I kept the √ weighting and did not retune Canyon, a sector the user has played and
+      judged good.
+  - **"Fixed builds ≥ 10 pts below smart"** still fails on most sectors, as before
+    (heavy-only is strong on Switchback 84% and Hive 76%). This is the open B4 item.
+- **Perf** (`--stress --perf`, xvfb, OpenGL 3, 260 enemies):
+
+  | Map | Sim tick | Draw calls |
+  | --- | --- | --- |
+  | Outpost, plain | 1.34–1.60 ms | 82 |
+  | Mire, plain | 1.70 ms | 117 |
+  | Canyon, plain | 1.71 ms | 109 |
+  | Switchback, plain | 2.22 ms | 104 |
+  | Hive, mixed | 2.28–2.36 ms | 109–112 |
+  | Mire, mixed | 2.13–2.22 ms | 114–120 |
+
+  - The "about 90" draw-call guideline was only ever measured on Outpost. Canyon and
+    Switchback were already over it, and the new maps are in line with their extra paths and
+    pads.
+  - The sim tick sits around the 2.0 ms desktop budget with this machine's usual ±50%
+    noise.
+  - Both go to the B5 phone check.
+- **Tests:** game 288/288, tools 12/12.
+  - New: Heavy Ordnance scales a cast; six sectors scroll to the newest open one; the
+    six-tier tree fits a 540×960 screen.
+  - Updated: content counts (6 maps, 18 nodes, 15 enemies all in waves), star totals
+    "/ 18", the tree test (6 tiers, 36 stars), the relaxed portal and escalation rules.
+- **E8 status.** All four stages are built. Waiting on the user's review of Stages 3–4.
+- **For the user to judge by hand:**
+  - the three sectors' layouts and grounds;
+  - the Overmind finale's length (guarded for much of its walk);
+  - Canyon under the new bot (a player may not notice any change);
+  - the tier-6 nodes;
+  - the threat re-rating and the relaxed escalation rule.
+
+## 2026-09-30 — E8 closed: the user's review
+
+The user reviewed the Stage 4 report and said "looks good". They asked for a handoff for
+the next session.
+- **E8 (content expansion) is complete.**
+- The defaults listed as open calls in `handover.md` §2 stand as built. None was changed,
+  though the user didn't rule on them one by one:
+  - the 3 s Queen interval;
+  - the Titan's full armour shed;
+  - the long Overmind finale;
+  - the relaxed escalation test and the threat re-rating;
+  - no new special attack in sectors 4–6;
+  - Canyon's bot score.
+- **Stages 3–4 are still uncommitted** (92 paths). The user commits.
+- **Next work item:** B5, the Android build and performance (ROADMAP).

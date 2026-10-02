@@ -4,6 +4,9 @@
 [ext_resource type="Resource" path="res://data/maps/outpost.tres" id="map"]
 [ext_resource type="Resource" path="res://data/maps/canyon.tres" id="map_canyon"]
 [ext_resource type="Resource" path="res://data/maps/switchback.tres" id="map_switchback"]
+[ext_resource type="Resource" path="res://data/maps/mire.tres" id="map_mire"]
+[ext_resource type="Resource" path="res://data/maps/ashfall.tres" id="map_ashfall"]
+[ext_resource type="Resource" path="res://data/maps/hive.tres" id="map_hive"]
 [ext_resource type="Script" path="res://src/defs/map_def.gd" id="t_maps"]
 [ext_resource type="Resource" path="res://data/barricade.tres" id="barricade"]
 [ext_resource type="Resource" path="res://data/skill_tree.tres" id="skill_tree"]
@@ -80,8 +83,9 @@
 [ext_resource type="Resource" path="res://data/abilities/repair.tres" id="ab_repair"]
 [resource]
 script = ExtResource("cfg")
+wall_y = 980.0
 map = ExtResource("map")
-maps = Array[ExtResource("t_maps")]([ExtResource("map"), ExtResource("map_canyon"), ExtResource("map_switchback")])
+maps = Array[ExtResource("t_maps")]([ExtResource("map"), ExtResource("map_canyon"), ExtResource("map_switchback"), ExtResource("map_mire"), ExtResource("map_ashfall"), ExtResource("map_hive")])
 barricade = ExtResource("barricade")
 skill_tree = ExtResource("skill_tree")
 units = Array[ExtResource("t_units")]([ExtResource("units_0"), ExtResource("units_1"), ExtResource("units_2"), ExtResource("units_3"), ExtResource("units_4"), ExtResource("units_5")])

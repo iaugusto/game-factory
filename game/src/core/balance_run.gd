@@ -5,12 +5,20 @@ extends RefCounted
 ## flat record of the outcome. Pure core, so the record shape is unit tested; the tool script
 ## (tools/balance_sim.gd) only loops over seeds and writes the records as JSON lines.
 
-## The bot's skill-tree profiles: the stars a player brings to sector 1 (none), 2 (≈3), 3 (≈6).
+## The bot's skill-tree profiles: the stars a player brings to each sector, about 3 a sector
+## (1: none, 2: ≈3, 3: ≈6, 4: ≈9, 5: ≈12, 6: ≈15; a profile may leave a star unspent where no
+## node fits).
 const PROFILES: Dictionary = {
 	"T0": [],
 	"T3": [&"drill", &"thick_walls", &"war_chest"],
 	"T6": [&"drill", &"thick_walls", &"war_chest", &"sharpshooters", &"reinforced_pads",
 			&"scavengers"],
+	"T9": [&"drill", &"thick_walls", &"war_chest", &"sharpshooters", &"reinforced_pads",
+			&"scavengers", &"engineers"],
+	"T12": [&"drill", &"thick_walls", &"war_chest", &"sharpshooters", &"reinforced_pads",
+			&"scavengers", &"engineers", &"last_stand", &"field_barricade"],
+	"T15": [&"drill", &"thick_walls", &"war_chest", &"sharpshooters", &"reinforced_pads",
+			&"scavengers", &"engineers", &"last_stand", &"field_barricade", &"veteran_crews"],
 }
 
 

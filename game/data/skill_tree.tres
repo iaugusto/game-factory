@@ -17,8 +17,11 @@
 [ext_resource type="Resource" path="res://data/skills/engineers.tres" id="sk_12"]
 [ext_resource type="Resource" path="res://data/skills/supply_drop.tres" id="sk_13"]
 [ext_resource type="Resource" path="res://data/skills/fourth_card.tres" id="sk_14"]
+[ext_resource type="Resource" path="res://data/skills/heavy_ordnance.tres" id="sk_15"]
+[ext_resource type="Resource" path="res://data/skills/bastion.tres" id="sk_16"]
+[ext_resource type="Resource" path="res://data/skills/fire_control.tres" id="sk_17"]
 
 [resource]
 script = ExtResource("1_s")
 branch_titles = PackedStringArray("ARSENAL", "BULWARK", "LOGISTICS")
-skills = Array[ExtResource("t_skill")]([ExtResource("sk_0"), ExtResource("sk_1"), ExtResource("sk_2"), ExtResource("sk_3"), ExtResource("sk_4"), ExtResource("sk_5"), ExtResource("sk_6"), ExtResource("sk_7"), ExtResource("sk_8"), ExtResource("sk_9"), ExtResource("sk_10"), ExtResource("sk_11"), ExtResource("sk_12"), ExtResource("sk_13"), ExtResource("sk_14")])
+skills = Array[ExtResource("t_skill")]([ExtResource("sk_0"), ExtResource("sk_1"), ExtResource("sk_2"), ExtResource("sk_3"), ExtResource("sk_4"), ExtResource("sk_5"), ExtResource("sk_6"), ExtResource("sk_7"), ExtResource("sk_8"), ExtResource("sk_9"), ExtResource("sk_10"), ExtResource("sk_11"), ExtResource("sk_12"), ExtResource("sk_13"), ExtResource("sk_14"), ExtResource("sk_15"), ExtResource("sk_16"), ExtResource("sk_17")])

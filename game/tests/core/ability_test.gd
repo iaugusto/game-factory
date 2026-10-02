@@ -392,3 +392,22 @@ func test_repair_heals_the_gate_units_and_barricade_without_aim() -> void:
 	run.step()
 	assert_float(run.wall_damage_taken).is_equal(0.0)
 	assert_float(plot.hp).is_equal(100.0)
+
+
+func test_heavy_ordnance_makes_special_attacks_hit_harder() -> void:
+	# E8 Stage 4's tier-6 node: RunModifiers.ability_power_bonus scales a cast's power.
+	var lost: Array[float] = []
+	for bonus: float in [0.0, 0.4]:
+		var a := Fixtures.ability(AbilityDef.Kind.STRIKE)
+		var e := Fixtures.enemy(100, 1.0, 5)
+		var cfg := Fixtures.config([Fixtures.wave([Fixtures.spawn(e, 1, 0.0, 1.0, 0)])])
+		cfg.abilities = [a]
+		var mods := RunModifiers.new()
+		mods.ability_power_bonus = bonus
+		var run := Run.new(cfg, 1, mods)
+		var target := _walk_to(run, 5.0)
+		assert_bool(run.call_ability(target.pos())).is_true()
+		_steps(run, 60)
+		lost.append(target.max_hp - target.hp)
+	assert_float(lost[0]).is_equal_approx(30.0, 1e-3)
+	assert_float(lost[1]).is_equal_approx(42.0, 1e-3)
